@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual env
+venv/
+.venv/
+
+# VS Code
+.vscode/
+
+# Environment
+.env
+
+# Build
+dist/
+build/
+
+# AI 工具临时文件
+.superpowers/
+AGENTS.md
+
+# Test
+tests/
+
+# Documents
+docs/
+
+# Log files
+logs/
+mclogs/
