@@ -253,6 +253,7 @@ TARGET_CODE_ROUTING = {
     "d94": "ARCH_IPHONE_16_17",
     "d47": "ARCH_IPHONE_16_17",
     "d57": "ARCH_IPHONE_16_17",
+    "v57": "ARCH_IPHONE_16_17",
     "d83": "ARCH_IPHONE_15_PRO",
     "d84": "ARCH_IPHONE_15_PRO",    
     "d37": "ARCH_IPHONE_15",
