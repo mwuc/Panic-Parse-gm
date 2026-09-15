@@ -1,0 +1,90 @@
+{
+  "types": [
+    {
+      "type": "SEP-Panic",
+      "match_re": "\\bsep\\b[ \\t]+(?:\\S+[ \\t]+)*\\bpanic\\b",
+      "is_hardware": true,
+      "description": "SEP chip or encrypted hardware components (Face ID / Touch ID module, encrypted Flash/NAND, NFC/Stockholm)",
+      "components": "sep"
+    },
+    {
+      "type": "DCP-Panic",
+      "match_re": "(?:\\bdcp\\b[ \\t]+(?:\\S+[ \\t]+)*\\bpanic\\b|\\bdcp\\b[ \\t]+crash)",
+      "is_hardware": true,
+      "description": "Display flex or screen assembly / Display IC / OLED Panel",
+      "components": "display"
+    },
+    {
+      "type": "AOP-Panic",
+      "match_re": "\\baop\\b[ \\t]+(?:\\S+[ \\t]+)*\\bpanic\\b",
+      "is_hardware": true,
+      "description": "Always-On Processor: sensor co-processor (SCM) i2c bus failure",
+      "components": "board"
+    },
+    {
+      "type": "Userspace-Panic",
+      "match_re": "userspace[ \\t]+(?:panic|watchdog[ \\t]+timeout)",
+      "is_hardware": false,
+      "note": "Software-related userspace panic (daemon/migrator hang or watchdog timeout); not a hardware fault — do not replace components.",
+      "subtypes": [
+        {
+          "type": "Userspace-NAND-Panic",
+          "match": "userspace panic: boot task failure",
+          "is_hardware": true,
+          "description": "NAND Flash failure (boot task finish-obliteration/fsck exited abnormally)",
+          "components": "storage"
+        }
+      ]
+    },
+    {
+      "type": "Watchdog-Panic",
+      "match_re": "watchdog[ \\t]+reset",
+      "is_hardware": true,
+      "description": "SoC watchdog reset — power management / supply rails",
+      "components": "battery"
+    },
+    {
+      "type": "PMGR-Panic",
+      "match": "pmgr",
+      "is_hardware": true,
+      "description": "Power manager (ApplePMGR) deadline failure — board-level power circuit",
+      "components": "board"
+    },
+    {
+      "type": "Kernel-Panic",
+      "match_re": "kern[ea]l[ \\t]+data[ \\t]+abort",
+      "is_hardware": false,
+      "note": "Software-related panic (kernel data abort); not a hardware fault — do not replace components."
+    },
+    {
+      "type": "Halt-Panic",
+      "match_re": "halt/restart[ \\t]+timed[ \\t]+out",
+      "is_hardware": true,
+      "description": "Halt/restart timed out — dock flex and USB communication circuit",
+      "components": "charging"
+    },
+    {
+      "type": "PORT-Fail-Panic",
+      "match_re": "port[ \\t]+enable[ \\t]+failed",
+      "is_hardware": true,
+      "description": "Baseband or Wi-Fi/BT combo chip (port enable failure)",
+      "components": "rf"
+    },
+    {
+      "type": "I2C-Panic",
+      "match_re": "\\bi2c\\d*\\b",
+      "is_hardware": true,
+      "description": "I2C bus fault with a display-related target (display-pmu / display-eeprom / mogul-display) — display power rail or flex",
+      "components": "display",
+      "subtypes": [
+        {
+          "type": "I2C-Audio-Panic",
+          "match": "ad5860",
+          "is_hardware": true,
+          "description": "I2C bus fault targeting the audio codec (ad5860) — audio circuit",
+          "components": "audio"
+        }
+      ]
+    }
+  ]
+}
