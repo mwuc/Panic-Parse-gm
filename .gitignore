@@ -23,6 +23,8 @@ AGENTS.md
 
 # Test
 tests/
+checkresult.txt 
+result.json
 
 # Documents
 docs/
