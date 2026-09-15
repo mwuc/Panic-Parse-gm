@@ -41,7 +41,14 @@ def extract_metadata(log_content):
 
 
 def _load_body(stripped):
-    """Parse the JSON body of an .ips file, skipping a one-line header if present."""
+    """Parse the JSON body of an .ips file, skipping a one-line header if present.
+
+    Real-world .ips files are occasionally malformed (bare newlines inside
+    strings, truncation). When the body JSON fails to parse, recover the
+    panicString/product fields directly from the raw text: their literals are
+    still well-formed because their special characters are escaped. Returns
+    None when nothing is recoverable (caller falls back to raw-text mode).
+    """
     try:
         return json.loads(stripped)
     except json.JSONDecodeError:
@@ -51,4 +58,24 @@ def _load_body(stripped):
             return json.loads(stripped.split("\n", 1)[1])
         except json.JSONDecodeError:
             pass
+        return _recover_fields(stripped)
     return None
+
+
+def _recover_fields(content):
+    """Extract panicString/product literals from a corrupt .ips body."""
+    recovered = {}
+    match = re.search(
+        r'"panicString"\s*:\s*"((?:[^"\\]|\\.)*)"', content, re.DOTALL
+    )
+    if match:
+        try:
+            recovered["panicString"] = json.loads(
+                '"' + match.group(1) + '"', strict=False
+            )
+        except json.JSONDecodeError:
+            pass
+    match = re.search(r'"product"\s*:\s*"([^"\\]*)"', content)
+    if match:
+        recovered["product"] = match.group(1)
+    return recovered or None

@@ -1,0 +1,274 @@
+  "panic-full-1969-12-31-162714.0003.ips": {
+    "is_hardware_panic": true,
+    "panic_type": "SMC_ARRAY_BITMASK",
+    "device_model": "iPhone14,7",
+    "target_code": "d27",
+    "matched_architecture": "ARCH_IPHONE_14",
+    "detected_codes": [
+      "0x400000"
+    ],
+    "missing_sensors": [],
+    "suspected_hardware": [
+      "Battery Data Line / aptic engine [0x500000]",
+      "Wireless Charging Flex (Back Glass) [0x400000]"
+    ],
+    "components": [
+      "battery",
+      "wireless"
+    ],
+    "repair_suggestion": "3. Inspect the Wireless Charging Coil and MagSafe thermal sensor flex cable. 4. Inspect battery connector lines (Gas Gauge) or test with a genuine OEM battery replacement."
+  },
+  
+    "panic-full-1969-12-31-163313.0003.ips": {
+    "is_hardware_panic": true,
+    "panic_type": "SMC_ARRAY_BITMASK",
+    "device_model": "iPhone14,7",
+    "target_code": "d27",
+    "matched_architecture": "ARCH_IPHONE_14",
+    "detected_codes": [
+      "0x100000"
+    ],
+    "missing_sensors": [],
+    "suspected_hardware": [
+      "Battery Data Line / aptic engine [0x500000]",
+      "Charging Port Flex Assembly (Legacy Bitfield) [0x100000]"
+    ],
+    "components": [
+      "battery",
+      "charging"
+    ],
+    "repair_suggestion": "1. Re-seat or replace the Charging Port Flex Assembly. 4. Inspect battery connector lines (Gas Gauge) or test with a genuine OEM battery replacement."
+  },
+  
+    "panic-full-1969-12-31-163346.0003.ips": {
+    "is_hardware_panic": true,
+    "panic_type": "SMC_ARRAY_BITMASK",
+    "device_model": "iPhone14,7",
+    "target_code": "d27",
+    "matched_architecture": "ARCH_IPHONE_14",
+    "detected_codes": [
+      "0x400000"
+    ],
+    "missing_sensors": [],
+    "suspected_hardware": [
+      "Battery Data Line / aptic engine [0x500000]",
+      "Wireless Charging Flex (Back Glass) [0x400000]"
+    ],
+    "components": [
+      "battery",
+      "wireless"
+    ],
+    "repair_suggestion": "3. Inspect the Wireless Charging Coil and MagSafe thermal sensor flex cable. 4. Inspect battery connector lines (Gas Gauge) or test with a genuine OEM battery replacement."
+  },
+  
+    "panic-full-1969-12-31-163712.0003.ips": {
+    "is_hardware_panic": true,
+    "panic_type": "SMC_ARRAY_BITMASK",
+    "device_model": "iPhone14,7",
+    "target_code": "d27",
+    "matched_architecture": "ARCH_IPHONE_14",
+    "detected_codes": [
+      "0x400000"
+    ],
+    "missing_sensors": [],
+    "suspected_hardware": [
+      "Battery Data Line / aptic engine [0x500000]",
+      "Wireless Charging Flex (Back Glass) [0x400000]"
+    ],
+    "components": [
+      "battery",
+      "wireless"
+    ],
+    "repair_suggestion": "3. Inspect the Wireless Charging Coil and MagSafe thermal sensor flex cable. 4. Inspect battery connector lines (Gas Gauge) or test with a genuine OEM battery replacement."
+  },
+  
+  
+    "panic-full-1969-12-31-164039.0003.ips": {
+    "is_hardware_panic": true,
+    "panic_type": "SMC_ARRAY_BITMASK",
+    "device_model": "iPhone14,7",
+    "target_code": "d27",
+    "matched_architecture": "ARCH_IPHONE_14",
+    "detected_codes": [
+      "0x400000"
+    ],
+    "missing_sensors": [],
+    "suspected_hardware": [
+      "Battery Data Line / aptic engine [0x500000]",
+      "Wireless Charging Flex (Back Glass) [0x400000]"
+    ],
+    "components": [
+      "battery",
+      "wireless"
+    ],
+    "repair_suggestion": "3. Inspect the Wireless Charging Coil and MagSafe thermal sensor flex cable. 4. Inspect battery connector lines (Gas Gauge) or test with a genuine OEM battery replacement."
+  },
+  
+    "panic-full-1969-12-31-175702.0003.ips": {
+    "is_hardware_panic": true,
+    "panic_type": "SMC_ARRAY_BITMASK",
+    "device_model": "iPhone16,2",
+    "target_code": "d84_esim",
+    "matched_architecture": "ARCH_IPHONE_15_PRO",
+    "detected_codes": [
+      "0x80000"
+    ],
+    "missing_sensors": [],
+    "suspected_hardware": [],
+    "components": [],
+    "repair_suggestion": "Check diode mode reading against ground on affected lines and verify physical connector integrity."
+  },
+  "panic-full-1969-12-31-180059.0003.ips": {
+    "is_hardware_panic": true,
+    "panic_type": "SMC_ARRAY_BITMASK",
+    "device_model": "iPhone16,2",
+    "target_code": "d84_esim",
+    "matched_architecture": "ARCH_IPHONE_15_PRO",
+    "detected_codes": [
+      "0x80000"
+    ],
+    "missing_sensors": [],
+    "suspected_hardware": [],
+    "components": [],
+    "repair_suggestion": "Check diode mode reading against ground on affected lines and verify physical connector integrity."
+  },
+  
+    "panic-full-2026-08-25-041814.0002.ips": {
+    "is_hardware_panic": true,
+    "panic_type": "SMC_ARRAY_BITMASK",
+    "device_model": "iPhone14,8",
+    "target_code": "d28",
+    "matched_architecture": "ARCH_IPHONE_14",
+    "detected_codes": [
+      "0x400000"
+    ],
+    "missing_sensors": [],
+    "suspected_hardware": [
+      "Battery Data Line / aptic engine [0x500000]",
+      "Wireless Charging Flex (Back Glass) [0x400000]"
+    ],
+    "components": [
+      "battery",
+      "wireless"
+    ],
+    "repair_suggestion": "3. Inspect the Wireless Charging Coil and MagSafe thermal sensor flex cable. 4. Inspect battery connector lines (Gas Gauge) or test with a genuine OEM battery replacement."
+  },
+  
+  
+    "panic-full-2026-08-31-191610.0002.ips": {
+    "is_hardware_panic": true,
+    "panic_type": "SMC_ARRAY_BITMASK",
+    "device_model": "iPhone14,7",
+    "target_code": "d27",
+    "matched_architecture": "ARCH_IPHONE_14",
+    "detected_codes": [
+      "0x500000"
+    ],
+    "missing_sensors": [],
+    "suspected_hardware": [
+      "Battery Data Line / aptic engine [0x500000]",
+      "Charging Port Flex Assembly (Legacy Bitfield) [0x100000]",
+      "Wireless Charging Flex (Back Glass) [0x400000]"
+    ],
+    "components": [
+      "battery",
+      "charging",
+      "wireless"
+    ],
+    "repair_suggestion": "1. Re-seat or replace the Charging Port Flex Assembly. 3. Inspect the Wireless Charging Coil and MagSafe thermal sensor flex cable. 4. Inspect battery connector lines (Gas Gauge) or test with a genuine OEM battery replacement."
+  },
+  
+  
+  
+    "panic-full-2026-09-09-081423.0002.ips": {
+    "is_hardware_panic": true,
+    "panic_type": "SMC_ARRAY_BITMASK",
+    "device_model": "iPhone18,3",
+    "target_code": "v57",
+    "matched_architecture": "ARCH_IPHONE_16_17",
+    "detected_codes": [
+      "0xe00000"
+    ],
+    "missing_sensors": [],
+    "suspected_hardware": [
+      "Battery Gas Gauge Bus / Power Button Flex Line [0x400000]",
+      "Display Driver Interposer / Face ID Bus Line [0x800000]",
+      "Wireless Charging Coil / MagSafe Thermal Sensor Assembly (TW0P) [0x200000]"
+    ],
+    "components": [
+      "battery",
+      "interposer",
+      "wireless"
+    ],
+    "repair_suggestion": "3. Inspect the Wireless Charging Coil and MagSafe thermal sensor flex cable. 4. Inspect battery connector lines (Gas Gauge) or test with a genuine OEM battery replacement. 5. Potential double-decker logic board interposer fracture or desoldering. Reballing or interposer re-flow required."
+  },
+  
+  
+    "panic-full-2026-09-10-111231.0002.ips": {
+    "is_hardware_panic": true,
+    "panic_type": "SMC_ARRAY_BITMASK",
+    "device_model": "iPhone18,2",
+    "target_code": "v54",
+    "matched_architecture": "ARCH_IPHONE_16_17",
+    "detected_codes": [
+      "0x900000"
+    ],
+    "missing_sensors": [],
+    "suspected_hardware": [
+      "Display Driver Interposer / Face ID Bus Line [0x800000]",
+      "Front Earpiece / Proximity & Ambient Light Sensor Flex (ALS/PRX) [0x100000]"
+    ],
+    "components": [
+      "front_als",
+      "interposer"
+    ],
+    "repair_suggestion": "2. Inspect or replace the Front Earpiece / Proximity & ALS Sensor Flex Assembly. 5. Potential double-decker logic board interposer fracture or desoldering. Reballing or interposer re-flow required."
+  },
+  
+  
+    "panic-full-2026-09-11-065649.0002.ips": {
+    "is_hardware_panic": true,
+    "panic_type": "SMC_ARRAY_BITMASK",
+    "device_model": "iPhone17,2",
+    "target_code": "d94",
+    "matched_architecture": "ARCH_IPHONE_16_17",
+    "detected_codes": [
+      "0x700000"
+    ],
+    "missing_sensors": [],
+    "suspected_hardware": [
+      "Battery Gas Gauge Bus / Power Button Flex Line [0x400000]",
+      "Front Earpiece / Proximity & Ambient Light Sensor Flex (ALS/PRX) [0x100000]",
+      "Wireless Charging Coil / MagSafe Thermal Sensor Assembly (TW0P) [0x200000]"
+    ],
+    "components": [
+      "battery",
+      "front_als",
+      "wireless"
+    ],
+    "repair_suggestion": "2. Inspect or replace the Front Earpiece / Proximity & ALS Sensor Flex Assembly. 3. Inspect the Wireless Charging Coil and MagSafe thermal sensor flex cable. 4. Inspect battery connector lines (Gas Gauge) or test with a genuine OEM battery replacement."
+  },
+  
+  
+    "panic-full-2026-09-12-043637.0002.ips": {
+    "is_hardware_panic": true,
+    "panic_type": "SMC_ARRAY_BITMASK",
+    "device_model": "iPhone18,2",
+    "target_code": "v54",
+    "matched_architecture": "ARCH_IPHONE_16_17",
+    "detected_codes": [
+      "0xe00000"
+    ],
+    "missing_sensors": [],
+    "suspected_hardware": [
+      "Battery Gas Gauge Bus / Power Button Flex Line [0x400000]",
+      "Display Driver Interposer / Face ID Bus Line [0x800000]",
+      "Wireless Charging Coil / MagSafe Thermal Sensor Assembly (TW0P) [0x200000]"
+    ],
+    "components": [
+      "battery",
+      "interposer",
+      "wireless"
+    ],
+    "repair_suggestion": "3. Inspect the Wireless Charging Coil and MagSafe thermal sensor flex cable. 4. Inspect battery connector lines (Gas Gauge) or test with a genuine OEM battery replacement. 5. Potential double-decker logic board interposer fracture or desoldering. Reballing or interposer re-flow required."
+  },

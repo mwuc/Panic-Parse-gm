@@ -2,7 +2,7 @@
 
 import re
 
-from . import data
+from . import data, registry
 
 
 def analyze(panic_string, architecture):
@@ -14,13 +14,23 @@ def analyze(panic_string, architecture):
         "missing_sensors": [],
         "suspected_hardware": [],
         "components": [],
+        "note": None,
     }
+
+    # Non-iPhone devices are outside the supported range: no registry
+    # matching, no SMC decoding — the result is "Not Supported", full stop.
+    if architecture == data.NOT_SUPPORTED:
+        out["panic_type"] = data.NOT_SUPPORTED_MESSAGE
+        out["note"] = data.NOT_SUPPORTED_MESSAGE
+        return out
+
     smc_bitmasks = data.SMC_BITMASK_ARCHITECTURES[architecture]
     arch_exact_codes = data.ARCHITECTURE_EXACT_CODES.get(architecture, {})
 
-    _analyze_smc_array(panic_string, smc_bitmasks, arch_exact_codes, out)
-    _analyze_missing_sensors(panic_string, out)
-    _analyze_smc_assertions(panic_string, out)
+    if not _analyze_registry(panic_string, architecture, out):
+        _analyze_smc_array(panic_string, smc_bitmasks, arch_exact_codes, out)
+        _analyze_missing_sensors(panic_string, out)
+        _analyze_smc_assertions(panic_string, out)
 
     out["suspected_hardware"] = sorted(set(out["suspected_hardware"]))
     out["components"] = sorted(set(out["components"]))
@@ -32,6 +42,80 @@ def _parse_value(token):
     if token.lower().startswith("0x"):
         return int(token, 16)
     return int(token)
+
+
+def _analyze_registry(panic_string, architecture, out, entries=None):
+    """Match the declarative panic-type registry; first match wins.
+
+    Matching is scoped to the panic header (the first line of the panic
+    string): broad substring rules (bare "pmgr", i2c tokens) would otherwise
+    hit kext-inventory boilerplate ("com.apple.driver.AppleT8110PMGR") that
+    most modern panic logs carry deep in the body. The registry patterns are
+    line-oriented by construction (_WORD = spaces/tabs only), so the header
+    is their natural matching domain; every real signature lives on line 1.
+
+    Returns True when an entry matched — the caller then skips the SMC
+    branches entirely. `entries` defaults to the loaded registry and exists
+    so the engine can be unit-tested with in-memory registries.
+    """
+    if entries is None:
+        entries = registry.REGISTRY
+
+    header = panic_string.split("\n", 1)[0]
+    for entry in entries:
+        architectures = entry["architectures"]
+        if architectures and architecture not in architectures:
+            continue
+        if not entry["pattern"].search(header):
+            continue
+
+        matched = entry
+        for subtype in entry["subtypes"]:
+            # A subtype's architectures gate narrows within the entry's gate:
+            # gated-out subtypes are skipped, later subtypes still tried.
+            subtype_architectures = subtype["architectures"]
+            if subtype_architectures and architecture not in subtype_architectures:
+                continue
+            if subtype["pattern"].search(header):
+                matched = subtype
+                break
+
+        out["panic_type"] = matched["type"]
+        is_hardware = matched["is_hardware"]
+        out["is_hardware_panic"] = (
+            entry["is_hardware"] if is_hardware is None else is_hardware
+        )
+
+        description = matched["description"] or entry["description"]
+        if description:
+            out["suspected_hardware"].append(description)
+
+        components = matched["components"]
+        if components is None:
+            components = entry["components"]
+        out["components"].extend(_resolve_components(components, architecture))
+
+        # Notes are per-node: a subtype hit does NOT inherit the entry's
+        # note (a hardware subtype under a software entry must still get
+        # template suggestions, not the software note).
+        if matched["note"]:
+            out["note"] = matched["note"]
+        return True
+    return False
+
+
+def _resolve_components(components, architecture):
+    """Resolve a components declaration (str / list / per-arch dict) to keys."""
+    if components is None:
+        return []
+    if isinstance(components, str):
+        return [components]
+    if isinstance(components, list):
+        return list(components)
+    value = components.get(architecture, components.get("default"))
+    if value is None:
+        return []
+    return [value] if isinstance(value, str) else list(value)
 
 
 def _analyze_smc_array(panic_string, smc_bitmasks, arch_exact_codes, out):

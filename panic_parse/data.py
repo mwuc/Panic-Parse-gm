@@ -38,6 +38,11 @@ SMC_BITMASK_ARCHITECTURES = {
     },
     # iPhone 15 Pro series (targets d83, d84)
     "ARCH_IPHONE_15_PRO": {
+        0x080000: {
+            "description": "Charging Port Flex Assembly / Air Pressure Sensor",
+            "component": "Charging Port Flex Assembly / Air Pressure Sensor",
+            "key": "charging",
+        },
         0x100000: {
             "description": "Charging Port Flex Assembly",
             "component": "Charging Port Flex Assembly",
@@ -116,11 +121,6 @@ SMC_BITMASK_ARCHITECTURES = {
                 "description": "Wireless Charging Flex (Back Glass)",
                 "component": "Wireless Charging Flex Back Glass",
                 "key": "wireless",
-            },
-            0x500000: {
-                "description": "Battery Data Line / aptic engine",
-                "component": "Battery Connector / Power Button Flex",
-                "key": "battery",
             },
         },
     # iPhone 13 series (targets d17, d16, d63, d64)
@@ -228,6 +228,9 @@ ARCHITECTURE_EXACT_CODES = {
     "ARCH_IPHONE_15_PRO": {
         0x300000: ("Charging Port Flex Assembly fault (0x300000)", "charging"),
     },
+    "ARCH_IPHONE_14": {
+        0x500000: ("Battery Connector / Power Button Flex (0x500000)", "battery"),
+    },
 }
 
 # Missing-sensor text -> (hardware description, component key)
@@ -278,6 +281,19 @@ TARGET_CODE_ROUTING = {
 # "iPhone15,4") -> architecture. The product-map number does NOT track the
 # marketing generation (e.g. iPhone13,x is the iPhone 12 family), so route by
 # full product string, not by major number.
+#
+# Routing fallback rules (routing.py):
+#   - iPhone product with major number <= 10 and no exact entry above
+#     -> DEFAULT_GENERIC (old iPhone; no bitmask table exists)
+#   - iPhone product with major number >= 11 and no exact entry above
+#     -> NOT_SUPPORTED (routing-data gap; add the entry instead of guessing)
+#   - non-iPhone product (iPad / Watch / ...) -> NOT_SUPPORTED
+#
+# Supported range: iPhone 11 and later.
+NOT_SUPPORTED = "NOT_SUPPORTED"
+NOT_SUPPORTED_MESSAGE = "Not Supported"
+
+# iPhone product code mapping; refer to https://khwang9883.github.io/MobileModels/brands/apple_all.html
 PRODUCT_MAP_ROUTING = {
     "iPhone10,3": "ARCH_IPHONE_11_12",
     "iPhone10,6": "ARCH_IPHONE_11_12",
@@ -315,6 +331,11 @@ PRODUCT_MAP_ROUTING = {
     "iPhone18,2": "ARCH_IPHONE_16_17",
     "iPhone18,3": "ARCH_IPHONE_16_17",
     "iPhone18,4": "ARCH_IPHONE_16_17",
+    "iPhone18,5": "ARCH_IPHONE_16_17",
+    "iPhone19,2": "ARCH_IPHONE_16_17",
+    "iPhone19,3": "ARCH_IPHONE_16_17",
+    "iPhone19,4": "ARCH_IPHONE_16_17",
+    "iPhone19,7": "ARCH_IPHONE_16_17",
 }
 
 # (component key, template) in fixed emission order. Numbers are part of the
@@ -327,6 +348,11 @@ SUGGESTION_TEMPLATES = [
     ("interposer", "5. Potential double-decker logic board interposer fracture or desoldering. Reballing or interposer re-flow required."),
     ("board", "6. It could require a sandwich reball or a bottom board swap."),
     ("gyro", "7. Inspect the Logic Board Gyroscope IC & Power Circuit."),
+    ("display", "8. Inspect the display flex connection; re-seat or replace the flex, then test with a known-good screen assembly."),
+    ("sep", "9. SEP / encrypted hardware related: check Face ID / Touch ID module, encrypted Flash/NAND, and NFC/Stockholm components; board-level repair."),
+    ("rf", "10. Baseband or Wi-Fi/BT combo chip fault: check RF power supply, then re-ball or replace the combo chip module."),
+    ("storage", "11. NAND Flash failure: test and re-ball the storage chip, or perform board-level storage repair."),
+    ("audio", "12. Audio codec fault: check the codec chip's power and I2C lines, then re-ball or replace the audio codec."),
 ]
 
 FALLBACK_SUGGESTION = (
