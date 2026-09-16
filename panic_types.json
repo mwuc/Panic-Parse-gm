@@ -16,10 +16,103 @@
     },
     {
       "type": "AOP-Panic",
-      "match_re": "\\baop\\b[ \\t]+(?:\\S+[ \\t]+)*\\bpanic\\b",
+      "match": "AOP PANIC - ",
       "is_hardware": true,
       "description": "Always-On Processor: sensor co-processor (SCM) i2c bus failure",
-      "components": "board"
+      "components": "board",
+      "subtypes": [
+        {
+          "type": "AOP-SCM-BMP284",
+          "scope": "body",
+          "match": "BMP284",
+          "description": "Barometric pressure sensor (BMP284)",
+          "components": "board"
+        },
+        {
+          "type": "AOP-SCM-i2cscm0",
+          "scope": "body",
+          "match_re": "SCMController[ \\t]+i2cscm0[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
+          "description": "Power & Battery Subsystem",
+          "components": "board"
+        },
+        {
+          "type": "AOP-SCM-i2cscm1",
+          "scope": "body",
+          "match_re": "SCMController[ \\t]+i2cscm1[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
+          "description": "Front Display & Motion Sensors",
+          "components": "board"
+        },
+        {
+          "type": "AOP-SCM-i2cscm2",
+          "scope": "body",
+          "match_re": "SCMController[ \\t]+i2cscm2[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
+          "description": "Thermal & Capacitive Touch",
+          "components": "board"
+        },
+        {
+          "type": "AOP-SCM-i2cscm3",
+          "scope": "body",
+          "match_re": "SCMController[ \\t]+i2cscm3[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
+          "description": "Audio & Haptics / Secondary PMU",
+          "components": "board"
+        },
+        {
+          "type": "AOP-SCM-i2cscm4",
+          "scope": "body",
+          "match_re": "SCMController[ \\t]+i2cscm4[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
+          "description": "USB-C / Dock Connector",
+          "components": "board"
+        },
+        {
+          "type": "AOP-SCM-i2csm0",
+          "scope": "body",
+          "match_re": "SCMController[ \\t]+i2csm0[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
+          "description": "PMU / fuel gauge / Tristar / Hydra charging control chip.",
+          "components": "board"
+        },
+        {
+          "type": "AOP-SCM-i2csm1",
+          "scope": "body",
+          "match_re": "SCMController[ \\t]+i2csm1[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
+          "description": "Proximity / ambient light sensor (ALS) / TrueDepth dot projector",
+          "components": "board"
+        },
+        {
+          "type": "AOP-SCM-i2csm2",
+          "scope": "body",
+          "match_re": "SCMController[ \\t]+i2csm2[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
+          "description": "Multi-channel NTC thermistor / wireless charging receiver IC.",
+          "components": "board"
+        },
+        {
+          "type": "AOP-SCM-i2csm3",
+          "scope": "body",
+          "match_re": "SCMController[ \\t]+i2csm3[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
+          "description": "Taptic Engine / audio amplifier",
+          "components": "board"
+        },        
+        {
+          "type": "AOP-SCM-i2cm0",
+          "scope": "body",
+          "match_re": "SCMController[ \\t]+i2cm0[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
+          "description": "screen touch / camera module EEPROMs",
+          "components": "board"
+        },        
+        {
+          "type": "AOP-SCM-i2cm1",
+          "scope": "body",
+          "match_re": "SCMController[ \\t]+i2cm1[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
+          "description": "screen touch / camera module EEPROMs",
+          "components": "board"
+        },
+        {
+          "type": "AOP-SCM-{1}",
+          "scope": "body",
+          "match_re": "SCMController[ \\t]+(\\S+)[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
+          "description": "Low power sensors & Flex Cable / sensor bus failure",
+          "components": "board"
+        }
+      ]
     },
     {
       "type": "Userspace-Panic",
@@ -60,8 +153,42 @@
       "type": "Halt-Panic",
       "match_re": "halt/restart[ \\t]+timed[ \\t]+out",
       "is_hardware": true,
-      "description": "Halt/restart timed out — dock flex and USB communication circuit",
-      "components": "charging"
+      "description": "Halt/restart timed out — dock flex and USB communication circuit.",
+      "components": "charging",
+      "subtypes": [
+        {
+          "type": "Halt-Panic-13",
+          "match_re": "halt/restart[ \\t]+timed[ \\t]+out",
+          "is_hardware": true,
+          "architectures": ["ARCH_IPHONE_13"],
+          "description": "Charge Flex / BMS cable / Rear Microphone / Flash flex",
+          "components": "charging"
+        },
+        {
+          "type": "Halt-Panic-14",
+          "match_re": "halt/restart[ \\t]+timed[ \\t]+out",
+          "is_hardware": true,
+          "architectures": ["ARCH_IPHONE_14", "ARCH_IPHONE_14_PRO"],
+          "description": "Charge Flex / BMS cable / Wireless Charging Flex.",
+          "components": "charging"
+        },
+        {
+          "type": "Halt-Panic-15",
+          "match_re": "halt/restart[ \\t]+timed[ \\t]+out",
+          "is_hardware": true,
+          "architectures": ["ARCH_IPHONE_15", "ARCH_IPHONE_15_PRO"],
+          "description": "USB-C Flex / BMS cable / thermal_sensor.",
+          "components": "charging"
+        },
+        {
+          "type": "Halt-Panic-16-17",
+          "match_re": "halt/restart[ \\t]+timed[ \\t]+out",
+          "is_hardware": true,
+          "architectures": ["ARCH_IPHONE_16_17"],
+          "description": "USB-C Flex / PMU / Multi-point thermistor.",
+          "components": "charging"
+        }
+      ]
     },
     {
       "type": "PORT-Fail-Panic",
@@ -83,6 +210,27 @@
           "is_hardware": true,
           "description": "I2C bus fault targeting the audio codec (ad5860) — audio circuit",
           "components": "audio"
+        },
+        {
+          "type": "I2C-Display-Panic",
+          "match": "mogul",
+          "is_hardware": true,
+          "description": "Display and Touch Certification Module",
+          "components": "display"
+        },
+        {
+          "type": "I2C-Display-PMU-Panic",
+          "match": "display-pmu",
+          "is_hardware": true,
+          "description": "Display assembly / display flex cable / PMU",
+          "components": "display"
+        },
+        {
+          "type": "I2C-Display-EEPROM-Panic",
+          "match": "display-eeprom",
+          "is_hardware": true,
+          "description": "Display EEPROM — display power rail or flex",
+          "components": "display"
         }
       ]
     }

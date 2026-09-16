@@ -27,10 +27,14 @@ def analyze(panic_string, architecture):
     smc_bitmasks = data.SMC_BITMASK_ARCHITECTURES[architecture]
     arch_exact_codes = data.ARCHITECTURE_EXACT_CODES.get(architecture, {})
 
-    if not _analyze_registry(panic_string, architecture, out):
-        _analyze_smc_array(panic_string, smc_bitmasks, arch_exact_codes, out)
-        _analyze_missing_sensors(panic_string, out)
-        _analyze_smc_assertions(panic_string, out)
+    # An explicit "Missing sensor(s): …" marker is the strongest hardware
+    # evidence: in real logs it rides on a generic "userspace watchdog
+    # timeout" header, so it must outrank the registry signatures and the
+    # bitmask array — otherwise the sensor diagnosis is masked.
+    if not _analyze_missing_sensors(panic_string, out):
+        if not _analyze_registry(panic_string, architecture, out):
+            _analyze_smc_array(panic_string, smc_bitmasks, arch_exact_codes, out)
+            _analyze_smc_assertions(panic_string, out)
 
     out["suspected_hardware"] = sorted(set(out["suspected_hardware"]))
     out["components"] = sorted(set(out["components"]))
@@ -66,21 +70,36 @@ def _analyze_registry(panic_string, architecture, out, entries=None):
         architectures = entry["architectures"]
         if architectures and architecture not in architectures:
             continue
-        if not entry["pattern"].search(header):
+        if entry["scope"] == "body":
+            entry_target = panic_string
+        else:
+            entry_target = header
+        entry_match = entry["pattern"].search(entry_target)
+        if not entry_match:
             continue
 
         matched = entry
+        matched_match = entry_match
         for subtype in entry["subtypes"]:
             # A subtype's architectures gate narrows within the entry's gate:
             # gated-out subtypes are skipped, later subtypes still tried.
             subtype_architectures = subtype["architectures"]
             if subtype_architectures and architecture not in subtype_architectures:
                 continue
-            if subtype["pattern"].search(header):
+            # Subtype scope inherits the entry's scope unless it declares its
+            # own ("body" = match the whole panic string, not just line 1).
+            subtype_scope = subtype["scope"] or entry["scope"]
+            subtype_target = panic_string if subtype_scope == "body" else header
+            subtype_match = subtype["pattern"].search(subtype_target)
+            if subtype_match:
                 matched = subtype
+                matched_match = subtype_match
                 break
 
-        out["panic_type"] = matched["type"]
+        panic_type = matched["type"]
+        if matched["dynamic_type"]:
+            panic_type = _expand_type(panic_type, matched_match)
+        out["panic_type"] = panic_type
         is_hardware = matched["is_hardware"]
         out["is_hardware_panic"] = (
             entry["is_hardware"] if is_hardware is None else is_hardware
@@ -102,6 +121,25 @@ def _analyze_registry(panic_string, architecture, out, entries=None):
             out["note"] = matched["note"]
         return True
     return False
+
+
+def _expand_type(template, match):
+    """Expand {1}/{name} placeholders in a subtype's 'type' from its match.
+
+    Non-participating groups expand to an empty string (never "None").
+    Captured text is inserted verbatim — it is not re-scanned for
+    placeholders, so log content cannot inject further substitutions.
+    """
+
+    def replace(placeholder):
+        key = placeholder.group(1)
+        if key.isdigit():
+            value = match.group(int(key))
+        else:
+            value = match.groupdict().get(key)
+        return value or ""
+
+    return registry.TYPE_PLACEHOLDER_RE.sub(replace, template)
 
 
 def _resolve_components(components, architecture):
@@ -182,17 +220,24 @@ def _record_sensor(sensor, out):
 
 
 def _analyze_missing_sensors(panic_string, out):
+    """Record sensors named by a "Missing sensor(s): …" line.
+
+    Returns True when the marker is present — the caller then skips the
+    registry and the remaining SMC branches (strongest evidence wins).
+    """
     missing_match = re.search(
         r"missing\s+sensor\(s\):\s*([a-zA-Z0-9\s_]+?)(?=\n|\\n|\"|$)",
         panic_string,
         re.IGNORECASE,
     )
-    if missing_match:
-        out["is_hardware_panic"] = True
-        if out["panic_type"] == "UNKNOWN":
-            out["panic_type"] = "WATCHDOG_MISSING_SENSOR"
-        for sensor in missing_match.group(1).strip().split():
-            _record_sensor(sensor, out)
+    if not missing_match:
+        return False
+    out["is_hardware_panic"] = True
+    if out["panic_type"] == "UNKNOWN":
+        out["panic_type"] = "WATCHDOG_MISSING_SENSOR"
+    for sensor in missing_match.group(1).strip().split():
+        _record_sensor(sensor, out)
+    return True
 
 
 def _analyze_smc_assertions(panic_string, out):

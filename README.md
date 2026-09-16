@@ -113,7 +113,7 @@ Pure-stdlib package with a one-way dependency chain — every module can be unde
 | `parsing.py` | Input normalization: `.ips` header split, body JSON parse, `panicString` / `device_model` / `target_code` extraction, raw-text fallbacks. |
 | `routing.py` | `(target_code, device_model)` → architecture key. Target-code match wins; exact product-string lookup (`PRODUCT_MAP_ROUTING`, e.g. `iPhone15,4`) is the fallback. |
 | `registry.py` | Loads, validates and compiles the external `panic_types.json` registry. Fails fast at import time on any schema error, with repair guidance in the error text. |
-| `analysis.py` | Panic-string analysis: registry signature matching (first, before SMC), then sensor-array value extraction, exact-code check, bitwise decomposition, missing-sensor and assertion branches. |
+| `analysis.py` | Panic-string analysis: missing-sensor marker (first — strongest evidence), then registry signature matching, then sensor-array value extraction, exact-code check, bitwise decomposition, and assertion branches. |
 | `suggestions.py` | Component keys → repair text. |
 | `cli.py` / `__main__.py` | argparse entry (`python -m panic_parse`). |
 | `panic_parse.py` (root) | Compat shim: with a file argument delegates to the CLI; without one prints the smoke case. |
@@ -123,14 +123,17 @@ Pure-stdlib package with a one-way dependency chain — every module can be unde
 ```
 raw .ips content
   → parsing.extract_metadata      → panic_string, device_model, target_code
-  → routing.resolve_architecture  → e.g. ARCH_IPHONE_15_16_17
+  → routing.resolve_architecture  → e.g. ARCH_IPHONE_16_17 (or NOT_SUPPORTED)
   → analysis.analyze:
-       1. registry match (panic_types.json, first match wins)   ← non-SMC types
-       2. SMC branches: array codes / missing sensors / assertions   ← fallback
+       1. "Missing sensor(s): …" marker   ← strongest hardware evidence
+       2. registry match (panic_types.json, first match wins)
+       3. SMC branches: array codes / assertions   ← fallback
   → suggestions.build_suggestions → repair text for matched keys
                                     (registry `note` bypasses this for software types)
   → result dict (10 keys, stable order)
 ```
+
+The missing-sensor marker runs first because real logs pair it with a generic `userspace watchdog timeout` header — letting the registry claim those logs would mask the concrete sensor (and its `SENSOR_HARDWARE_MAP` component).
 
 ### The core domain invariant
 
@@ -149,7 +152,41 @@ New panic types are **pure data edits** in `panic_types.json` — no Python chan
 4. **Platform relevance** — `"architectures": ["ARCH_IPHONE_16_17"]` (absent = all platforms, including iPads on `DEFAULT_GENERIC`). The value is a **JSON array of architecture keys, OR semantics**: the entry (or subtype) participates whenever the resolved architecture matches *any* listed key — e.g. `["ARCH_IPHONE_14", "ARCH_IPHONE_15_PRO"]` admits both the iPhone 14 and iPhone 15 Pro families. Keys are case-sensitive (`ARCH_IPHONE_15_PRO`, not `ARCH_IPHONE_15_pro`) and must be producible by the routing tables — the loader rejects unknown keys, non-array forms (a `"A|B"` string is not accepted), and empty arrays at import time. A subtype's `architectures` narrows within the entry's gate: gated-out subtypes are skipped, later subtypes still tried, and the entry-level fallback applies when none match;
 5. **Hardware** — `"components": "battery"`, a list, or `{"default": "board", "ARCH_IPHONE_16_17": "display"}` for per-platform attribution.
 
-Also available: `"is_hardware": false` + `"note": "..."` for software-class panics (the note becomes `repair_suggestion` verbatim), and `"description"` for the `suspected_hardware` text. Entries are evaluated in declaration order — put more specific ones first. A subtype may carry its own `note` / `is_hardware` / `components` / `architectures`; a subtype hit does **not** inherit the entry's `note` (so a hardware subtype under a software entry still gets template suggestions — see the `Userspace-Panic` entry in `panic_types.json` for a real example), and a subtype's `architectures` gate narrows within the entry's gate (gated-out subtypes are skipped; the entry-level fallback applies when none match). Matching runs against the **panic header** (the first line of `panicString`), case-insensitively: broad substring rules would otherwise hit kext-inventory boilerplate deep in the log body.
+Also available: `"is_hardware": false` + `"note": "..."` for software-class panics (the note becomes `repair_suggestion` verbatim), and `"description"` for the `suspected_hardware` text. Entries are evaluated in declaration order — put more specific ones first. A subtype may carry its own `note` / `is_hardware` / `components` / `architectures`; a subtype hit does **not** inherit the entry's `note` (so a hardware subtype under a software entry still gets template suggestions — see the `Userspace-Panic` entry in `panic_types.json` for a real example), and a subtype's `architectures` gate narrows within the entry's gate (gated-out subtypes are skipped; the entry-level fallback applies when none match). Matching runs against the **panic header** (the first line of `panicString`) by default, case-insensitively: broad substring rules would otherwise hit kext-inventory boilerplate deep in the log body.
+
+**Matching scope (`scope`).** A node may set `"scope": "body"` to match against the **whole** `panicString` instead of just the first line — needed when the signature lives deeper in the log (e.g. the `SCMController … global-errors = N` handler dump). A subtype inherits the entry's scope unless it declares its own; the default stays `header` for every existing type. Because body scope sees the whole log, keep those patterns anchored and specific.
+
+**Dynamic subtype names (capture-group placeholders).** A subtype's `type` may contain `{1}` (numbered group) or `{name}` (named group `(?P<name>…)`) placeholders, expanded from its own `match_re` when it matches — so one rule can name a diagnosis after whatever the log reports. Placeholders require `match_re` (not literal `match`) and are **only** allowed in a subtype's `type`; entries, `description` and `note` reject them at load time.
+
+**Per-controller descriptions (static subtypes before a dynamic catch-all).** Because `description` is static per node, controllers that need distinct `suspected_hardware` text each get their own static subtype; a dynamic `{1}` subtype placed **last** catches any controller name not yet enumerated. Declaration order is the priority order:
+
+```json
+{
+  "type": "AOP-Panic",
+  "match": "AOP PANIC - ",
+  "is_hardware": true,
+  "description": "Always-On Processor: sensor co-processor (SCM) i2c bus failure",
+  "components": "board",
+  "subtypes": [
+    {
+      "type": "AOP-SCM-i2cscm0",
+      "scope": "body",
+      "match_re": "SCMController[ \\t]+i2cscm0[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
+      "description": "SCM controller i2cscm0 reports non-zero global errors — <i2cscm0 hardware meaning>",
+      "components": "board"
+    },
+    {
+      "type": "AOP-SCM-{1}",
+      "scope": "body",
+      "match_re": "SCMController[ \\t]+(\\S+)[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
+      "description": "SCM controller reports non-zero global errors — sensor bus fault",
+      "components": "board"
+    }
+  ]
+}
+```
+
+A log whose handler dump says `SCMController i2cscm1 [0x11c3548] : global-errors = 4` is diagnosed as `AOP-SCM-i2cscm1`; `i2cscm0` as `AOP-SCM-i2cscm0` (with its own `suspected_hardware` text); an unlisted controller such as `i2cm3` still gets its name via the dynamic catch-all (`AOP-SCM-i2cm3`) with the generic description. A log where every controller reports `global-errors = 0` (or has no handler dump at all) falls back to the entry-level `AOP-Panic`. The `[1-9][0-9]*` tail is what excludes zero, and only the **first** matching subtype in declaration order is reported.
 
 ```json
 {
@@ -199,10 +236,10 @@ No logic changes anywhere else. Component `key`s drive suggestion emission; reus
 ## Testing
 
 ```bash
-python -m unittest          # 116 tests (+3 auto-skipped golden tests when mclogs/ is empty), ~1s
+python -m unittest          # 141 tests (+3 auto-skipped golden tests when mclogs/ is empty), ~1s
 ```
 
-The suite covers the two real panic logs in `logs/` (iPhone routing + iPad Not Supported) and, when the `mclogs/` corpus is present, all of its files end-to-end as a golden mapping (filename → expected `panic_type`; the golden tests auto-skip while the directory is empty). Plus synthetic cases for every branch: registry subtypes / platform gating / per-platform components, corrupt-JSON field recovery, decimal codes, multi-value arrays, missing sensors, assertions, exact codes, null JSON values, routing precedence, and registry validation errors. Run it after any change — especially after editing `panic_types.json`.
+The suite covers the real AOP panic logs in `logs/` end-to-end (dynamic `AOP-SCM-<controller>` naming from the handler dump, zero-error and no-handler fallbacks — asserted for whichever fixtures are present), and, when the `mclogs/` corpus is present, all of its files as a golden mapping (filename → expected `panic_type`; the golden tests auto-skip while the directory is empty). Plus synthetic cases for every branch: registry subtypes / platform gating / matching scope / capture-group names / per-platform components, corrupt-JSON field recovery, decimal codes, multi-value arrays, missing sensors, assertions, exact codes, null JSON values, routing precedence, and registry validation errors. Run it after any change — especially after editing `panic_types.json`.
 
 ## Repository layout
 

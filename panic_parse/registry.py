@@ -14,6 +14,13 @@ from . import data
 
 DEFAULT_REGISTRY_PATH = Path(__file__).resolve().parent.parent / "panic_types.json"
 
+# Placeholders in a subtype's "type" are expanded at match time with the
+# capture groups of its "match_re": {1} is a numbered group, {name} a named
+# group. Exposed because the analysis engine performs the expansion.
+TYPE_PLACEHOLDER_RE = re.compile(r"\{(\d+|[A-Za-z_][A-Za-z0-9_]*)\}")
+
+_VALID_SCOPES = ("header", "body")
+
 
 def component_keys():
     """Component keys that have a repair-suggestion template."""
@@ -48,6 +55,7 @@ def validate_registry(raw, keys, architectures):
         entry["architectures"] = _validate_architectures(
             node.get("architectures"), where, architectures
         )
+        entry["scope"] = _validate_scope(node.get("scope"), where)
         subtypes = []
         for sub_index, sub in enumerate(node.get("subtypes", [])):
             sub_where = f"{where}.subtypes[{sub_index}]"
@@ -57,10 +65,22 @@ def validate_registry(raw, keys, architectures):
             subtype["architectures"] = _validate_architectures(
                 sub.get("architectures"), sub_where, architectures
             )
+            subtype["scope"] = _validate_scope(sub.get("scope"), sub_where)
             subtypes.append(subtype)
         entry["subtypes"] = subtypes
         entries.append(entry)
     return entries
+
+
+def _validate_scope(value, where):
+    if value is None:
+        return None
+    if value not in _VALID_SCOPES:
+        raise ValueError(
+            f"{where}: 'scope' must be one of {list(_VALID_SCOPES)} or omitted "
+            "(default: header — first line of the panic string only)"
+        )
+    return value
 
 
 def _validate_node(node, where, seen, keys, architectures, is_entry):
@@ -103,16 +123,67 @@ def _validate_node(node, where, seen, keys, architectures, is_entry):
     elif is_hardware is not None and not isinstance(is_hardware, bool):
         raise ValueError(f"{where} ({type_name}): 'is_hardware' must be a boolean")
 
+    dynamic_type = _validate_type_placeholders(
+        type_name, pattern, where, is_entry, has_regex
+    )
+    description = _validate_text(node.get("description"), where, "description")
+    note = _validate_text(node.get("note"), where, "note")
+    _reject_placeholders(description, where, "description")
+    _reject_placeholders(note, where, "note")
+
     return {
         "type": type_name,
         "pattern": pattern,
+        "dynamic_type": dynamic_type,
         "is_hardware": is_hardware,
-        "description": _validate_text(node.get("description"), where, "description"),
+        "description": description,
         "components": _validate_components(
             node.get("components"), where, type_name, keys, architectures
         ),
-        "note": _validate_text(node.get("note"), where, "note"),
+        "note": note,
     }
+
+
+def _validate_type_placeholders(type_name, pattern, where, is_entry, uses_regex):
+    """Validate {N}/{name} placeholders in a 'type'; return True when present.
+
+    Placeholders are only meaningful on subtypes (the entry emits its own
+    declared name) and require a regex with a matching capture group.
+    """
+    placeholders = TYPE_PLACEHOLDER_RE.findall(type_name)
+    if not placeholders:
+        return False
+    if is_entry:
+        raise ValueError(
+            f"{where} ({type_name}): 'type' placeholders are only supported on subtypes"
+        )
+    if not uses_regex:
+        raise ValueError(
+            f"{where} ({type_name}): 'type' placeholders require 'match_re' "
+            "with capture groups"
+        )
+    for key in placeholders:
+        if key.isdigit():
+            index = int(key)
+            if index < 1 or index > pattern.groups:
+                raise ValueError(
+                    f"{where} ({type_name}): placeholder '{{{key}}}' has no matching "
+                    f"capture group (match_re defines {pattern.groups})"
+                )
+        elif key not in pattern.groupindex:
+            raise ValueError(
+                f"{where} ({type_name}): placeholder '{{{key}}}' has no matching "
+                "named group in 'match_re'"
+            )
+    return True
+
+
+def _reject_placeholders(text, where, field):
+    if text and TYPE_PLACEHOLDER_RE.search(text):
+        raise ValueError(
+            f"{where}: placeholders are only supported in a subtype 'type'; "
+            f"remove the placeholder from '{field}'"
+        )
 
 
 def _validate_text(value, where, field):
