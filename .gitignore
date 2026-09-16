@@ -23,8 +23,9 @@ AGENTS.md
 
 # Test
 tests/
-checkresult.txt 
-result.json
+
+#Temp
+temp/
 
 # Documents
 docs/

@@ -38,6 +38,11 @@ SMC_BITMASK_ARCHITECTURES = {
     },
     # iPhone 15 Pro series (targets d83, d84)
     "ARCH_IPHONE_15_PRO": {
+        0x040000: {
+            "description": "Charging Port Flex Assembly (Legacy Bitfield)",
+            "component": "Lightning/USB-C Port Assembly",
+            "key": "charging",
+        },  
         0x080000: {
             "description": "Charging Port Flex Assembly / Air Pressure Sensor",
             "component": "Charging Port Flex Assembly / Air Pressure Sensor",
@@ -61,6 +66,11 @@ SMC_BITMASK_ARCHITECTURES = {
     },
     # iPhone 15 series (targets d37, d38)
     "ARCH_IPHONE_15": {
+        0x040000: {
+            "description": "Charging Port Flex Assembly (Legacy Bitfield)",
+            "component": "Lightning/USB-C Port Assembly",
+            "key": "charging",
+        },  
         0x080000: {
             "description": "Charging Port Flex Assembly / Air Pressure Sensor",
             "component": "Charging Port Flex Assembly / Air Pressure Sensor",

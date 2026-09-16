@@ -146,7 +146,7 @@ New panic types are **pure data edits** in `panic_types.json` — no Python chan
 1. **Type name** — e.g. `"PNP"`;
 2. **Match string or regex** — `"match": "PNP Panic"` (literal, punctuation-safe) or `"match_re": "PNP Panic.*USB"`;
 3. **Optional subtypes** — each with its own `type` + `match`/`match_re`, matched in order after the entry matches; the subtype's `type` is emitted as `panic_type`. Subtypes may also carry `is_hardware` / `components` / `note` / `architectures` of their own;
-4. **Platform relevance** — `"architectures": ["ARCH_IPHONE_16_17"]` (absent = all platforms, including iPads on `DEFAULT_GENERIC`). A subtype's `architectures` narrows within the entry's gate: gated-out subtypes are skipped, later subtypes still tried, and the entry-level fallback applies when none match;
+4. **Platform relevance** — `"architectures": ["ARCH_IPHONE_16_17"]` (absent = all platforms, including iPads on `DEFAULT_GENERIC`). The value is a **JSON array of architecture keys, OR semantics**: the entry (or subtype) participates whenever the resolved architecture matches *any* listed key — e.g. `["ARCH_IPHONE_14", "ARCH_IPHONE_15_PRO"]` admits both the iPhone 14 and iPhone 15 Pro families. Keys are case-sensitive (`ARCH_IPHONE_15_PRO`, not `ARCH_IPHONE_15_pro`) and must be producible by the routing tables — the loader rejects unknown keys, non-array forms (a `"A|B"` string is not accepted), and empty arrays at import time. A subtype's `architectures` narrows within the entry's gate: gated-out subtypes are skipped, later subtypes still tried, and the entry-level fallback applies when none match;
 5. **Hardware** — `"components": "battery"`, a list, or `{"default": "board", "ARCH_IPHONE_16_17": "display"}` for per-platform attribution.
 
 Also available: `"is_hardware": false` + `"note": "..."` for software-class panics (the note becomes `repair_suggestion` verbatim), and `"description"` for the `suspected_hardware` text. Entries are evaluated in declaration order — put more specific ones first. A subtype may carry its own `note` / `is_hardware` / `components` / `architectures`; a subtype hit does **not** inherit the entry's `note` (so a hardware subtype under a software entry still gets template suggestions — see the `Userspace-Panic` entry in `panic_types.json` for a real example), and a subtype's `architectures` gate narrows within the entry's gate (gated-out subtypes are skipped; the entry-level fallback applies when none match). Matching runs against the **panic header** (the first line of `panicString`), case-insensitively: broad substring rules would otherwise hit kext-inventory boilerplate deep in the log body.
@@ -172,7 +172,7 @@ Also available: `"is_hardware": false` + `"note": "..."` for software-class pani
           "type": "PNP_LEGACY",
           "match_re": "PNP Panic.*USB",
           "description": "PNP USB failure on older hardware — display-adjacent rail",
-          "architectures": ["ARCH_IPHONE_13"],
+          "architectures": ["ARCH_IPHONE_13", "ARCH_IPHONE_14", "ARCH_IPHONE_14_PRO"],
           "components": "display"
         }
       ]
@@ -181,7 +181,7 @@ Also available: `"is_hardware": false` + `"note": "..."` for software-class pani
 }
 ```
 
-With this entry, the same `PNP Panic ... USB` header resolves to `PNP_USB` (→ `charging`) on an iPhone 16/17, to `PNP_LEGACY` (→ `display`) on an iPhone 13-family device, and to the entry-level `PNP` (→ `board`) on any other architecture — one signature, three platform-specific diagnoses, all in pure JSON.
+With this entry, the same `PNP Panic ... USB` header resolves to `PNP_USB` (→ `charging`) on an iPhone 16/17, to `PNP_LEGACY` (→ `display`) on any of the iPhone 13 / 14 / 14 Pro families (the multi-value OR gate), and to the entry-level `PNP` (→ `board`) on any other architecture — one signature, three platform-specific diagnoses, all in pure JSON.
 
 **Hand-editing gotchas:** backslashes must be doubled in JSON (`i2c\d+::` → `"i2c\\d+::"`) — prefer literal `match` when no pattern syntax is needed; the file must be UTF-8; every component key must have a `SUGGESTION_TEMPLATES` entry in `data.py` first; `architectures` entries must be producible by the routing tables. The loader validates all of this at import time and fails the test suite immediately with repair guidance — run `python -m unittest` after every registry edit.
 
