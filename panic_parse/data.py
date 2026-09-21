@@ -4,216 +4,219 @@ Pure data, no logic. Adding a device generation = add a bitmask table,
 routing entries, and (if needed) a suggestion template here only.
 """
 
-# Component keys drive repair suggestions. One of:
-# charging, front_als, wireless, battery, interposer, board
+# Repair suggestions are driven by component keys (see SUGGESTION_TEMPLATES).
+# Per bitmask entry: "suspected_hardware" is the text emitted in the output's
+# suspected_hardware list, "components" is the component key that drives the
+# output's components list and repair_suggestion, and "description" is a
+# reserved, currently-unused field kept for reference.
 
 SMC_BITMASK_ARCHITECTURES = {
     # iPhone 16 / 17 series (targets d93, d94, d47, d57, d58, d97, d98 ...)
     "ARCH_IPHONE_16_17": {
         0x080000: {
             "description": "USB-C Charging Port Flex Assembly (Primary Mic mic1 / Barometer prs0)",
-            "component": "USB-C Port Flex Assembly",
-            "key": "charging",
+            "suspected_hardware": "USB-C Port Flex Assembly",
+            "components": "charging",
         },
         0x100000: {
             "description": "Front Earpiece / Proximity & Ambient Light Sensor Flex (ALS/PRX)",
-            "component": "Front Earpiece Sensor Flex",
-            "key": "front_als",
+            "suspected_hardware": "Front Earpiece Sensor Flex",
+            "components": "front_als",
         },
         0x200000: {
             "description": "Wireless Charging Coil / MagSafe Thermal Sensor Assembly (TW0P)",
-            "component": "Wireless Charging / MagSafe Coil",
-            "key": "wireless",
+            "suspected_hardware": "Wireless Charging / MagSafe Coil",
+            "components": "wireless",
         },
         0x400000: {
             "description": "Battery Gas Gauge Bus / Power Button Flex Line",
-            "component": "Battery Connector / Power Button Flex",
-            "key": "battery",
+            "suspected_hardware": "Battery Connector / Power Button Flex",
+            "components": "battery",
         },
         0x800000: {
             "description": "Display Driver Interposer / Face ID Bus Line",
-            "component": "Display / Face ID Interposer Bus",
-            "key": "interposer",
+            "suspected_hardware": "Display / Face ID Interposer Bus",
+            "components": "interposer",
         },
     },
     # iPhone 15 Pro series (targets d83, d84)
     "ARCH_IPHONE_15_PRO": {
         0x040000: {
             "description": "Charging Port Flex Assembly (Legacy Bitfield)",
-            "component": "Lightning/USB-C Port Assembly",
-            "key": "charging",
+            "suspected_hardware": "Lightning/USB-C Port Assembly",
+            "components": "charging",
         },  
         0x080000: {
             "description": "Charging Port Flex Assembly / Air Pressure Sensor",
-            "component": "Charging Port Flex Assembly / Air Pressure Sensor",
-            "key": "charging",
+            "suspected_hardware": "Charging Port Flex Assembly / Air Pressure Sensor",
+            "components": "charging",
         },
         0x100000: {
             "description": "Charging Port Flex Assembly",
-            "component": "Charging Port Flex Assembly",
-            "key": "charging",
+            "suspected_hardware": "Charging Port Flex Assembly",
+            "components": "charging",
         },
         0x200000: {
             "description": "Front Proximity / Ambient Light Sensor Flex Assembly",
-            "component": "Front Proximity / Ambient Light Sensor Flex Assembly",
-            "key": "front_als",
+            "suspected_hardware": "Front Proximity / Ambient Light Sensor Flex Assembly",
+            "components": "front_als",
         },
         0x400000: {
             "description": "Wireless Charging Flex (Back Glass)",
-            "component": "Wireless Charging Flex (Back Glass)",
-            "key": "wireless",
+            "suspected_hardware": "Wireless Charging Flex (Back Glass)",
+            "components": "wireless",
         },
     },
     # iPhone 15 series (targets d37, d38)
     "ARCH_IPHONE_15": {
         0x040000: {
             "description": "Charging Port Flex Assembly (Legacy Bitfield)",
-            "component": "Lightning/USB-C Port Assembly",
-            "key": "charging",
+            "suspected_hardware": "Lightning/USB-C Port Assembly",
+            "components": "charging",
         },  
         0x080000: {
             "description": "Charging Port Flex Assembly / Air Pressure Sensor",
-            "component": "Charging Port Flex Assembly / Air Pressure Sensor",
-            "key": "charging",
+            "suspected_hardware": "Charging Port Flex Assembly / Air Pressure Sensor",
+            "components": "charging",
         },
         0x100000: {
             "description": "Front Proximity Flex Assembly",
-            "component": "Front Proximity Flex Assembly",
-            "key": "front_als",
+            "suspected_hardware": "Front Proximity Flex Assembly",
+            "components": "front_als",
         },
          0x200000: {
             "description": "Wireless Charging Flex (Back Glass)",
-            "component": "Wireless Charging Flex (Back Glass)",
-            "key": "wireless",
+            "suspected_hardware": "Wireless Charging Flex (Back Glass)",
+            "components": "wireless",
         },
     },
     # iPhone 14 Pro series (targets d73, d74)
     "ARCH_IPHONE_14_PRO": {
             0x020000: {
                 "description": "Sandwich board",
-                "component": "Sandwich board",
-                "key": "board",
+                "suspected_hardware": "Sandwich board",
+                "components": "board",
             },
             0x040000: {
                 "description": "Charging Port Flex Assembly (Legacy Bitfield)",
-                "component": "Lightning/USB-C Port Assembly",
-                "key": "charging",
+                "suspected_hardware": "Lightning/USB-C Port Assembly",
+                "components": "charging",
             },  
             0x080000: {
                 "description": "Front Proximity / Ambient Light Sensor Flex (Legacy Bitfield)",
-                "component": "Front Sensor Flex",
-                "key": "front_als",
+                "suspected_hardware": "Front Sensor Flex",
+                "components": "front_als",
             },             
             0x100000: {
                 "description": "Power Button Flex",
-                "component": "Power Button Flex",
-                "key": "battery",
+                "suspected_hardware": "Power Button Flex",
+                "components": "battery",
             },
         },
     # iPhone 14 series (targets d27, d28)
     "ARCH_IPHONE_14": {
             0x020000: {
                 "description": "Sandwich board",
-                "component": "Sandwich board",
-                "key": "board",
+                "suspected_hardware": "Sandwich board",
+                "components": "board",
             },           
             0x100000: {
                 "description": "Charging Port Flex Assembly (Legacy Bitfield)",
-                "component": "Lightning/USB-C Port Assembly",
-                "key": "charging",
+                "suspected_hardware": "Lightning/USB-C Port Assembly",
+                "components": "charging",
             },
             0x200000: {
                 "description": "Front Proximity Sensor / Ambient Light Sensor Flex (Legacy Bitfield)",
-                "component": "Front Sensor Flex",
-                "key": "front_als",
+                "suspected_hardware": "Front Sensor Flex",
+                "components": "front_als",
             },
             0x400000: {
                 "description": "Wireless Charging Flex (Back Glass)",
-                "component": "Wireless Charging Flex Back Glass",
-                "key": "wireless",
+                "suspected_hardware": "Wireless Charging Flex Back Glass",
+                "components": "wireless",
             },
         },
     # iPhone 13 series (targets d17, d16, d63, d64)
     "ARCH_IPHONE_13": {
         0x000400: {
             "description": "Bottom board",
-            "component": "Bottom board",
-            "key": "board",
+            "suspected_hardware": "Bottom board",
+            "components": "board",
         },
         0x000800: {
             "description": "Charging Port Flex Assembly (Legacy Bitfield)",
-            "component": "Lightning/USB-C Port Assembly",
-            "key": "charging",
+            "suspected_hardware": "Lightning/USB-C Port Assembly",
+            "components": "charging",
         },
         0x001000: {
             "description": "Front Proximity Sensor / Ambient Light Sensor Flex (Legacy Bitfield)",
-            "component": "Front Sensor Flex",
-            "key": "front_als",
+            "suspected_hardware": "Front Sensor Flex",
+            "components": "front_als",
         },
         0x004000: {
             "description": "Battery Data Line",
-            "component": "Battery Connector / Power Button Flex",
-            "key": "battery",
+            "suspected_hardware": "Battery Connector / Power Button Flex",
+            "components": "battery",
         },
     },
     # iPhone 11 / 12 series (targets N104, D53, D54, D42, D43, N841)
     "ARCH_IPHONE_11_12": {
         0x000100: {
             "description": "Charging Port Primary Mic Failure (mic1)",
-            "component": "Charging Port Mic1",
-            "key": "charging",
+            "suspected_hardware": "Charging Port Mic1",
+            "components": "charging",
         },
         0x000200: {
             "description": "Power Button / Rear Noise-Canceling Mic Failure (mic2)",
-            "component": "Power Flex Mic2",
-            "key": "board",
+            "suspected_hardware": "Power Flex Mic2",
+            "components": "board",
         },
         0x000400: {
             "description": "Front Earpiece Mic Failure (mic3)",
-            "component": "Front Earpiece Mic3",
-            "key": "front_als",
+            "suspected_hardware": "Front Earpiece Mic3",
+            "components": "front_als",
         },
         0x000800: {
             "description": "Charging Port Barometer Sensor Failure (prs0)",
-            "component": "Barometer prs0 Sensor",
-            "key": "charging",
+            "suspected_hardware": "Barometer prs0 Sensor",
+            "components": "charging",
         },
     },
     "DEFAULT_GENERIC": {
         0x001000: {
             "description": "Charging Port Assembly",
-            "component": "Charging Port Area",
-            "key": "charging",
+            "suspected_hardware": "Charging Port Area",
+            "components": "charging",
         },
         0x004000: {
             "description": "Battery sensor",
-            "component": "Battery Sensor",
-            "key": "battery",
+            "suspected_hardware": "Battery Sensor",
+            "components": "battery",
         },
         0x020000: {
             "description": "Gyroscope / Accelerometer ICs on Logic Board",
-            "component": "Gyroscope / Accelerometer ICs on Logic Board",
-            "key": "gyro",
+            "suspected_hardware": "Gyroscope / Accelerometer ICs on Logic Board",
+            "components": "gyro",
         },
         0x040000: {
             "description": "Charging Port Assembly / Bottom Sensor Array",
-            "component": "Charging Port Area",
-            "key": "charging",
+            "suspected_hardware": "Charging Port Area",
+            "components": "charging",
         },
         0x080000: {
             "description": "Front Proximity / Ambient Light Sensor Flex Assembly",
-            "component": "Front Sensor Flex",
-            "key": "front_als",
+            "suspected_hardware": "Front Sensor Flex",
+            "components": "front_als",
         },
         0x100000: {
             "description": "Power Button / Rear Noise-Canceling Mic Flex Assembly",
-            "component": "Power Button Flex",
-            "key": "board",
+            "suspected_hardware": "Power Button Flex",
+            "components": "board",
         },
         0x200000: {
             "description": "Wireless Charging / MagSafe Module",
-            "component": "Wireless Charging Module",
-            "key": "wireless",
+            "suspected_hardware": "Wireless Charging Module",
+            "components": "wireless",
         },
     },
 }
@@ -243,7 +246,7 @@ ARCHITECTURE_EXACT_CODES = {
     },
 }
 
-# Missing-sensor text -> (hardware description, component key)
+# Missing-sensor text -> (suspected_hardware text, component key)
 SENSOR_HARDWARE_MAP = {
     "mic1": ("Charging Port Flex Assembly (Primary Bottom Microphone)", "charging"),
     "mic2": ("Power Button / Rear Flash Flex (Rear Noise-Canceling Mic)", "board"),

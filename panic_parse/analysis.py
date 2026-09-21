@@ -36,6 +36,11 @@ def analyze(panic_string, architecture):
             _analyze_smc_array(panic_string, smc_bitmasks, arch_exact_codes, out)
             _analyze_smc_assertions(panic_string, out)
 
+    # Last resort: an unclassified panic still gets the fallback type
+    # (General-Panic), whose body-keyword subtypes may attribute hardware.
+    if out["panic_type"] == "UNKNOWN":
+        _analyze_registry(panic_string, architecture, out, fallback=True)
+
     out["suspected_hardware"] = sorted(set(out["suspected_hardware"]))
     out["components"] = sorted(set(out["components"]))
     return out
@@ -48,7 +53,7 @@ def _parse_value(token):
     return int(token)
 
 
-def _analyze_registry(panic_string, architecture, out, entries=None):
+def _analyze_registry(panic_string, architecture, out, entries=None, fallback=False):
     """Match the declarative panic-type registry; first match wins.
 
     Matching is scoped to the panic header (the first line of the panic
@@ -57,6 +62,11 @@ def _analyze_registry(panic_string, architecture, out, entries=None):
     most modern panic logs carry deep in the body. The registry patterns are
     line-oriented by construction (_WORD = spaces/tabs only), so the header
     is their natural matching domain; every real signature lives on line 1.
+
+    `fallback=False` (the default) evaluates only normal entries;
+    `fallback=True` evaluates only the single fallback entry, whose lack of a
+    pattern makes it match unconditionally (its subtypes then refine by body
+    keyword). analyze() calls the latter as the last resort.
 
     Returns True when an entry matched — the caller then skips the SMC
     branches entirely. `entries` defaults to the loaded registry and exists
@@ -67,16 +77,23 @@ def _analyze_registry(panic_string, architecture, out, entries=None):
 
     header = panic_string.split("\n", 1)[0]
     for entry in entries:
+        if entry["fallback"] != fallback:
+            continue
         architectures = entry["architectures"]
         if architectures and architecture not in architectures:
             continue
-        if entry["scope"] == "body":
-            entry_target = panic_string
+        pattern = entry["pattern"]
+        if pattern is None:
+            # Fallback entry: no signature of its own, matches by default.
+            entry_match = None
         else:
-            entry_target = header
-        entry_match = entry["pattern"].search(entry_target)
-        if not entry_match:
-            continue
+            if entry["scope"] == "body":
+                entry_target = panic_string
+            else:
+                entry_target = header
+            entry_match = pattern.search(entry_target)
+            if not entry_match:
+                continue
 
         matched = entry
         matched_match = entry_match
@@ -105,9 +122,11 @@ def _analyze_registry(panic_string, architecture, out, entries=None):
             entry["is_hardware"] if is_hardware is None else is_hardware
         )
 
-        description = matched["description"] or entry["description"]
-        if description:
-            out["suspected_hardware"].append(description)
+        suspect_text = (
+            matched["suspected_hardware"] or entry["suspected_hardware"]
+        )
+        if suspect_text:
+            out["suspected_hardware"].append(suspect_text)
 
         components = matched["components"]
         if components is None:
@@ -204,9 +223,9 @@ def _analyze_smc_array(panic_string, smc_bitmasks, arch_exact_codes, out):
             for mask, info in smc_bitmasks.items():
                 if code_val & mask:
                     out["suspected_hardware"].append(
-                        f"{info['description']} [{hex(mask)}]"
+                        f"{info['suspected_hardware']} [{hex(mask)}]"
                     )
-                    out["components"].append(info["key"])
+                    out["components"].append(info["components"])
 
 
 def _record_sensor(sensor, out):

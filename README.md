@@ -10,7 +10,7 @@ Useful for repair-shop triage: point it at a panic log, get "which flex/board co
 
 - **`.ips` format handling** — real panic logs are two concatenated JSON documents (a one-line metadata header, then the pretty-printed body); the parser splits and extracts `product` and `panicString` correctly.
 - **Architecture-aware bitmask decoding** — maps `(target code, device model)` to the right SMC bitmask table per device family (iPhone 11/12, 13, 14, 14 Pro, 15, 15 Pro, 16/17). **Supported range: iPhone 11 and later** — older iPhones route to a generic table; non-iPhone products (iPad/Watch) and unmapped modern iPhones report `Not Supported` without any decoding.
-- **Declarative panic-type registry** — non-SMC panic types (display-coprocessor, AOP sensor bus, SEP, I2C bus faults, baseband/Wi-Fi-BT port-enable, NAND boot failure, power-management timeouts, SoC watchdog, kernel software abort) are declared in an external `panic_types.json`; **adding a new panic type is a pure data edit with no code changes**. Supports per-type subtypes, platform gating, and per-platform hardware attribution. Works for iPads too.
+- **Declarative panic-type registry** — non-SMC panic types (display-coprocessor, AOP sensor bus, SEP, I2C bus faults, baseband/Wi-Fi-BT port-enable, NAND boot failure, power-management timeouts, SoC watchdog, kernel software abort) are declared in an external `panic_types.json`; **adding a new panic type is a pure data edit with no code changes**. Supports per-type subtypes, platform gating, per-platform hardware attribution, body-scope matching, and a last-resort `General-Panic` fallback for logs nothing else classifies.
 - **Multiple detection branches** — SMC sensor-array bitmask codes (hex or decimal, multi-value), exact-match codes (battery gas-gauge faults), `missing sensor(s)` text, and `SMC_VAL_ABSENT` assertions. Newer iOS versions report codes in decimal (e.g. `1048576`); all values are normalized to hex (`0x100000`) before decomposition.
 - **Component-level diagnosis** — every matched entry is reduced to a component key (`charging`, `front_als`, `wireless`, `battery`, `interposer`, `board`, `gyro`, `display`, `sep`, `rf`, `storage`, `audio`), and repair suggestions are driven by exactly those keys — no keyword guessing.
 - **Zero dependencies** — Python 3.13, standard library only. No build, no install.
@@ -79,10 +79,10 @@ There is also a smoke command (`python panic_parse.py`) that prints one syntheti
 | Field | Type | Meaning |
 |---|---|---|
 | `is_hardware_panic` | bool | True if any hardware-failure branch matched |
-| `panic_type` | str | `SMC_ARRAY_BITMASK`, `WATCHDOG_MISSING_SENSOR`, `SMC_ASSERTION_ABSENT`, or `UNKNOWN` (first matching branch wins, in that order) |
+| `panic_type` | str | the diagnosis: an SMC type (`SMC_ARRAY_BITMASK`, `WATCHDOG_MISSING_SENSOR`, `SMC_ASSERTION_ABSENT`), a registry type (`SEP-Panic`, `DCP-Panic`, `AOP-SCM-…`, `Halt-Panic-14`, …), `General-Panic` when nothing else classified the log, or `Not Supported` for non-iPhone devices |
 | `device_model` | str | e.g. `iPhone15,4` (from the log's `product` field, or `Hardware model:` text fallback) |
 | `target_code` | str | internal Apple target identifier, e.g. `d37` — used for architecture routing |
-| `matched_architecture` | str | which bitmask table was applied, e.g. `ARCH_IPHONE_15_16_17` |
+| `matched_architecture` | str | which bitmask table was applied, e.g. `ARCH_IPHONE_16_17` (or `NOT_SUPPORTED`) |
 | `detected_codes` | list | normalized hex codes from the sensor array, e.g. `["0x300000"]` |
 | `missing_sensors` | list | sensor IDs from `missing sensor(s)` lines or `!= SMC_VAL_ABSENT` assertions |
 | `suspected_hardware` | list | human-readable description of each suspected failure, with the responsible bit |
@@ -124,13 +124,14 @@ Pure-stdlib package with a one-way dependency chain — every module can be unde
 raw .ips content
   → parsing.extract_metadata      → panic_string, device_model, target_code
   → routing.resolve_architecture  → e.g. ARCH_IPHONE_16_17 (or NOT_SUPPORTED)
-  → analysis.analyze:
+   → analysis.analyze:
        1. "Missing sensor(s): …" marker   ← strongest hardware evidence
        2. registry match (panic_types.json, first match wins)
        3. SMC branches: array codes / assertions   ← fallback
-  → suggestions.build_suggestions → repair text for matched keys
+       4. fallback entry (General-Panic)   ← last resort for unclassified panics
+   → suggestions.build_suggestions → repair text for matched keys
                                     (registry `note` bypasses this for software types)
-  → result dict (10 keys, stable order)
+   → result dict (10 keys, stable order)
 ```
 
 The missing-sensor marker runs first because real logs pair it with a generic `userspace watchdog timeout` header — letting the registry claim those logs would mask the concrete sensor (and its `SENSOR_HARDWARE_MAP` component).
@@ -152,41 +153,64 @@ New panic types are **pure data edits** in `panic_types.json` — no Python chan
 4. **Platform relevance** — `"architectures": ["ARCH_IPHONE_16_17"]` (absent = all platforms, including iPads on `DEFAULT_GENERIC`). The value is a **JSON array of architecture keys, OR semantics**: the entry (or subtype) participates whenever the resolved architecture matches *any* listed key — e.g. `["ARCH_IPHONE_14", "ARCH_IPHONE_15_PRO"]` admits both the iPhone 14 and iPhone 15 Pro families. Keys are case-sensitive (`ARCH_IPHONE_15_PRO`, not `ARCH_IPHONE_15_pro`) and must be producible by the routing tables — the loader rejects unknown keys, non-array forms (a `"A|B"` string is not accepted), and empty arrays at import time. A subtype's `architectures` narrows within the entry's gate: gated-out subtypes are skipped, later subtypes still tried, and the entry-level fallback applies when none match;
 5. **Hardware** — `"components": "battery"`, a list, or `{"default": "board", "ARCH_IPHONE_16_17": "display"}` for per-platform attribution.
 
-Also available: `"is_hardware": false` + `"note": "..."` for software-class panics (the note becomes `repair_suggestion` verbatim), and `"description"` for the `suspected_hardware` text. Entries are evaluated in declaration order — put more specific ones first. A subtype may carry its own `note` / `is_hardware` / `components` / `architectures`; a subtype hit does **not** inherit the entry's `note` (so a hardware subtype under a software entry still gets template suggestions — see the `Userspace-Panic` entry in `panic_types.json` for a real example), and a subtype's `architectures` gate narrows within the entry's gate (gated-out subtypes are skipped; the entry-level fallback applies when none match). Matching runs against the **panic header** (the first line of `panicString`) by default, case-insensitively: broad substring rules would otherwise hit kext-inventory boilerplate deep in the log body.
+Also available: `"suspected_hardware"` for the text this node contributes to the output's `suspected_hardware` list, `"is_hardware": false` + `"note": "..."` for software-class panics (the note becomes `repair_suggestion` verbatim), and `"fallback": true` for the single last-resort entry (see below). Entries are evaluated in declaration order — put more specific ones first. A subtype may carry its own `note` / `is_hardware` / `components` / `architectures`; a subtype hit does **not** inherit the entry's `note` (so a hardware subtype under a software entry still gets template suggestions — see the `Userspace-Panic` entry in `panic_types.json` for a real example), and a subtype's `architectures` gate narrows within the entry's gate (gated-out subtypes are skipped; the entry-level `suspected_hardware` text applies when none match). Matching runs against the **panic header** (the first line of `panicString`) by default, case-insensitively: broad substring rules would otherwise hit kext-inventory boilerplate deep in the log body.
 
 **Matching scope (`scope`).** A node may set `"scope": "body"` to match against the **whole** `panicString` instead of just the first line — needed when the signature lives deeper in the log (e.g. the `SCMController … global-errors = N` handler dump). A subtype inherits the entry's scope unless it declares its own; the default stays `header` for every existing type. Because body scope sees the whole log, keep those patterns anchored and specific.
 
-**Dynamic subtype names (capture-group placeholders).** A subtype's `type` may contain `{1}` (numbered group) or `{name}` (named group `(?P<name>…)`) placeholders, expanded from its own `match_re` when it matches — so one rule can name a diagnosis after whatever the log reports. Placeholders require `match_re` (not literal `match`) and are **only** allowed in a subtype's `type`; entries, `description` and `note` reject them at load time.
+**Dynamic subtype names (capture-group placeholders).** A subtype's `type` may contain `{1}` (numbered group) or `{name}` (named group `(?P<name>…)`) placeholders, expanded from its own `match_re` when it matches — so one rule can name a diagnosis after whatever the log reports. Placeholders require `match_re` (not literal `match`) and are **only** allowed in a subtype's `type`; entries, `suspected_hardware` and `note` reject them at load time.
 
-**Per-controller descriptions (static subtypes before a dynamic catch-all).** Because `description` is static per node, controllers that need distinct `suspected_hardware` text each get their own static subtype; a dynamic `{1}` subtype placed **last** catches any controller name not yet enumerated. Declaration order is the priority order:
+**The fallback entry (`"fallback": true`).** Exactly one entry may be marked as the fallback — the last-resort type for panics nothing else classifies. It takes part in **no** normal matching (it has no `match`/`match_re` of its own) and is evaluated only after the missing-sensor scan, the normal registry pass, and the SMC branches have all come up empty. Give it `"scope": "body"` so its subtypes can attribute hardware from body keywords:
+
+```json
+{
+  "type": "General-Panic",
+  "fallback": true,
+  "scope": "body",
+  "is_hardware": false,
+  "note": "Unclassified panic — no known hardware attribution from the panic header.",
+  "subtypes": [
+    {
+      "type": "General-Audio-Panic",
+      "match_re": "audio[ \\t]+codec",
+      "is_hardware": true,
+      "suspected_hardware": "Audio codec circuit",
+      "components": "audio"
+    }
+  ]
+}
+```
+
+A panic that reaches the fallback without a subtype hit is reported as `General-Panic` with the entry `note`; a subtype hit reports that subtype's `type` and components. The fallback never steals a log that the SMC branches can diagnose.
+
+**Per-controller descriptions (static subtypes before a dynamic catch-all).** Because `suspected_hardware` is static per node, controllers that need distinct `suspected_hardware` text each get their own static subtype; a dynamic `{1}` subtype placed **last** catches any controller name not yet enumerated. Declaration order is the priority order:
 
 ```json
 {
   "type": "AOP-Panic",
   "match": "AOP PANIC - ",
   "is_hardware": true,
-  "description": "Always-On Processor: sensor co-processor (SCM) i2c bus failure",
+  "suspected_hardware": "Always-On Processor: sensor co-processor (SCM) i2c bus failure",
   "components": "board",
   "subtypes": [
     {
       "type": "AOP-SCM-i2cscm0",
       "scope": "body",
       "match_re": "SCMController[ \\t]+i2cscm0[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
-      "description": "SCM controller i2cscm0 reports non-zero global errors — <i2cscm0 hardware meaning>",
+      "suspected_hardware": "SCM controller i2cscm0 reports non-zero global errors — <i2cscm0 hardware meaning>",
       "components": "board"
     },
     {
       "type": "AOP-SCM-{1}",
       "scope": "body",
       "match_re": "SCMController[ \\t]+(\\S+)[ \\t]+\\[[^\\]]*\\][ \\t]*:[ \\t]*global-errors[ \\t]*=[ \\t]*[1-9][0-9]*",
-      "description": "SCM controller reports non-zero global errors — sensor bus fault",
+      "suspected_hardware": "SCM controller reports non-zero global errors — sensor bus fault",
       "components": "board"
     }
   ]
 }
 ```
 
-A log whose handler dump says `SCMController i2cscm1 [0x11c3548] : global-errors = 4` is diagnosed as `AOP-SCM-i2cscm1`; `i2cscm0` as `AOP-SCM-i2cscm0` (with its own `suspected_hardware` text); an unlisted controller such as `i2cm3` still gets its name via the dynamic catch-all (`AOP-SCM-i2cm3`) with the generic description. A log where every controller reports `global-errors = 0` (or has no handler dump at all) falls back to the entry-level `AOP-Panic`. The `[1-9][0-9]*` tail is what excludes zero, and only the **first** matching subtype in declaration order is reported.
+A log whose handler dump says `SCMController i2cscm1 [0x11c3548] : global-errors = 4` is diagnosed as `AOP-SCM-i2cscm1`; `i2cscm0` as `AOP-SCM-i2cscm0` (with its own `suspected_hardware` text); an unlisted controller such as `i2cm3` still gets its name via the dynamic catch-all (`AOP-SCM-i2cm3`) with the generic `suspected_hardware` text. A log where every controller reports `global-errors = 0` (or has no handler dump at all) falls back to the entry-level `AOP-Panic`. The `[1-9][0-9]*` tail is what excludes zero, and only the **first** matching subtype in declaration order is reported.
 
 ```json
 {
@@ -195,20 +219,20 @@ A log whose handler dump says `SCMController i2cscm1 [0x11c3548] : global-errors
       "type": "PNP",
       "match": "PNP Panic",
       "is_hardware": true,
-      "description": "PNP subsystem panic (unclassified variant)",
+      "suspected_hardware": "PNP subsystem panic (unclassified variant)",
       "components": "board",
       "subtypes": [
         {
           "type": "PNP_USB",
           "match_re": "PNP Panic.*USB",
-          "description": "PNP USB port enumeration failure — dock flex / USB circuit",
+          "suspected_hardware": "PNP USB port enumeration failure — dock flex / USB circuit",
           "architectures": ["ARCH_IPHONE_16_17"],
           "components": "charging"
         },
         {
           "type": "PNP_LEGACY",
           "match_re": "PNP Panic.*USB",
-          "description": "PNP USB failure on older hardware — display-adjacent rail",
+          "suspected_hardware": "PNP USB failure on older hardware — display-adjacent rail",
           "architectures": ["ARCH_IPHONE_13", "ARCH_IPHONE_14", "ARCH_IPHONE_14_PRO"],
           "components": "display"
         }
@@ -226,17 +250,17 @@ With this entry, the same `PNP Panic ... USB` header resolves to `PNP_USB` (→ 
 
 Edit `data.py` only:
 
-1. Add a bitmask table to `SMC_BITMASK_ARCHITECTURES` (each entry: `description`, `component`, `key`).
+1. Add a bitmask table to `SMC_BITMASK_ARCHITECTURES` (each entry: `suspected_hardware` = output text, `components` = component key, `description` = reserved/unused).
 2. Add the generation's target codes to `TARGET_CODE_ROUTING`.
 3. Add its product strings (e.g. `iPhone17,2`) to `PRODUCT_MAP_ROUTING`. Note the product-map number does not track the marketing generation — `iPhone13,x` is the iPhone 12 family — so always route by full product string.
 4. If the generation has known multi-bit fault signatures (values whose full meaning isn't the OR of their bits), add them to `ARCHITECTURE_EXACT_CODES`.
 
-No logic changes anywhere else. Component `key`s drive suggestion emission; reuse the existing keys where the template applies.
+No logic changes anywhere else. Component keys (the `components` field) drive suggestion emission; reuse the existing keys where the template applies.
 
 ## Testing
 
 ```bash
-python -m unittest          # 141 tests (+3 auto-skipped golden tests when mclogs/ is empty), ~1s
+python -m unittest          # 156 tests (+3 auto-skipped golden tests when mclogs/ is empty), ~1s
 ```
 
 The suite covers the real AOP panic logs in `logs/` end-to-end (dynamic `AOP-SCM-<controller>` naming from the handler dump, zero-error and no-handler fallbacks — asserted for whichever fixtures are present), and, when the `mclogs/` corpus is present, all of its files as a golden mapping (filename → expected `panic_type`; the golden tests auto-skip while the directory is empty). Plus synthetic cases for every branch: registry subtypes / platform gating / matching scope / capture-group names / per-platform components, corrupt-JSON field recovery, decimal codes, multi-value arrays, missing sensors, assertions, exact codes, null JSON values, routing precedence, and registry validation errors. Run it after any change — especially after editing `panic_types.json`.
@@ -248,7 +272,7 @@ panic_parse/            # the package (see Architecture)
 panic_parse.py          # compat shim (CLI delegate + smoke)
 panic_types.json        # declarative panic-type registry (edit this to add types)
 tests/                  # unittest suite
-logs/                   # real .ips fixtures (iPhone14,6 routing + iPad14,4 Not Supported)
+logs/                   # real .ips fixtures (AOP / SMC / missing-sensor scenarios)
 mclogs/                 # golden-mapping corpus location (currently empty; tests skip)
 docs/superpowers/       # design specs and implementation plans
 ```

@@ -48,10 +48,27 @@ def validate_registry(raw, keys, architectures):
         )
 
     seen = set()
+    fallback_count = 0
     entries = []
     for index, node in enumerate(raw["types"]):
         where = f"types[{index}]"
-        entry = _validate_node(node, where, seen, keys, architectures, is_entry=True)
+        if not isinstance(node, dict):
+            raise ValueError(f"{where}: entry must be an object")
+        is_fallback = node.get("fallback", False)
+        if not isinstance(is_fallback, bool):
+            raise ValueError(f"{where}: 'fallback' must be a boolean")
+        if is_fallback:
+            fallback_count += 1
+            if fallback_count > 1:
+                raise ValueError(
+                    f"{where}: at most one 'fallback' entry is allowed — it is "
+                    "the single last-resort type after every other branch fails"
+                )
+        entry = _validate_node(
+            node, where, seen, keys, architectures,
+            is_entry=True, is_fallback=is_fallback,
+        )
+        entry["fallback"] = is_fallback
         entry["architectures"] = _validate_architectures(
             node.get("architectures"), where, architectures
         )
@@ -83,7 +100,7 @@ def _validate_scope(value, where):
     return value
 
 
-def _validate_node(node, where, seen, keys, architectures, is_entry):
+def _validate_node(node, where, seen, keys, architectures, is_entry, is_fallback=False):
     if not isinstance(node, dict):
         raise ValueError(f"{where}: entry must be an object")
 
@@ -94,13 +111,29 @@ def _validate_node(node, where, seen, keys, architectures, is_entry):
         raise ValueError(f"{where}: duplicate type '{type_name}'")
     seen.add(type_name)
 
+    if not is_entry and "fallback" in node:
+        raise ValueError(
+            f"{where} ({type_name}): 'fallback' is only allowed on top-level entries"
+        )
+
     has_literal = "match" in node
     has_regex = "match_re" in node
-    if has_literal == has_regex:
+    if is_fallback:
+        # The fallback entry has no signature of its own: it is evaluated
+        # only after every other branch failed, and matches via subtypes.
+        if has_literal or has_regex:
+            raise ValueError(
+                f"{where} ({type_name}): a fallback entry must not declare "
+                "'match'/'match_re' — put its body keywords on subtypes and "
+                "let entry-level fields be the last-resort text"
+            )
+        pattern = None
+        has_regex = False
+    elif has_literal == has_regex:
         raise ValueError(
             f"{where} ({type_name}): provide exactly one of 'match' or 'match_re'"
         )
-    if has_regex:
+    elif has_regex:
         raw_pattern = node["match_re"]
         if not isinstance(raw_pattern, str):
             raise ValueError(f"{where} ({type_name}): 'match_re' must be a string")
@@ -126,9 +159,11 @@ def _validate_node(node, where, seen, keys, architectures, is_entry):
     dynamic_type = _validate_type_placeholders(
         type_name, pattern, where, is_entry, has_regex
     )
-    description = _validate_text(node.get("description"), where, "description")
+    suspect_text = _validate_text(
+        node.get("suspected_hardware"), where, "suspected_hardware"
+    )
     note = _validate_text(node.get("note"), where, "note")
-    _reject_placeholders(description, where, "description")
+    _reject_placeholders(suspect_text, where, "suspected_hardware")
     _reject_placeholders(note, where, "note")
 
     return {
@@ -136,7 +171,7 @@ def _validate_node(node, where, seen, keys, architectures, is_entry):
         "pattern": pattern,
         "dynamic_type": dynamic_type,
         "is_hardware": is_hardware,
-        "description": description,
+        "suspected_hardware": suspect_text,
         "components": _validate_components(
             node.get("components"), where, type_name, keys, architectures
         ),
