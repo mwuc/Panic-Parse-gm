@@ -14,14 +14,12 @@ def analyze(panic_string, architecture):
         "missing_sensors": [],
         "suspected_hardware": [],
         "components": [],
-        "note": None,
     }
 
     # Non-iPhone devices are outside the supported range: no registry
     # matching, no SMC decoding — the result is "Not Supported", full stop.
     if architecture == data.NOT_SUPPORTED:
         out["panic_type"] = data.NOT_SUPPORTED_MESSAGE
-        out["note"] = data.NOT_SUPPORTED_MESSAGE
         return out
 
     smc_bitmasks = data.SMC_BITMASK_ARCHITECTURES[architecture]
@@ -132,12 +130,6 @@ def _analyze_registry(panic_string, architecture, out, entries=None, fallback=Fa
         if components is None:
             components = entry["components"]
         out["components"].extend(_resolve_components(components, architecture))
-
-        # Notes are per-node: a subtype hit does NOT inherit the entry's
-        # note (a hardware subtype under a software entry must still get
-        # template suggestions, not the software note).
-        if matched["note"]:
-            out["note"] = matched["note"]
         return True
     return False
 

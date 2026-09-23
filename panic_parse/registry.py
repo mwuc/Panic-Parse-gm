@@ -22,11 +22,6 @@ TYPE_PLACEHOLDER_RE = re.compile(r"\{(\d+|[A-Za-z_][A-Za-z0-9_]*)\}")
 _VALID_SCOPES = ("header", "body")
 
 
-def component_keys():
-    """Component keys that have a repair-suggestion template."""
-    return {key for key, _ in data.SUGGESTION_TEMPLATES}
-
-
 def known_architectures():
     """Architecture keys the routing layer can actually produce."""
     return (
@@ -36,7 +31,7 @@ def known_architectures():
     )
 
 
-def validate_registry(raw, keys, architectures):
+def validate_registry(raw, architectures):
     """Validate a parsed registry document; return normalized entries.
 
     Pure function over already-parsed data — no file I/O, so it is directly
@@ -65,7 +60,7 @@ def validate_registry(raw, keys, architectures):
                     "the single last-resort type after every other branch fails"
                 )
         entry = _validate_node(
-            node, where, seen, keys, architectures,
+            node, where, seen, architectures,
             is_entry=True, is_fallback=is_fallback,
         )
         entry["fallback"] = is_fallback
@@ -77,7 +72,7 @@ def validate_registry(raw, keys, architectures):
         for sub_index, sub in enumerate(node.get("subtypes", [])):
             sub_where = f"{where}.subtypes[{sub_index}]"
             subtype = _validate_node(
-                sub, sub_where, seen, keys, architectures, is_entry=False
+                sub, sub_where, seen, architectures, is_entry=False
             )
             subtype["architectures"] = _validate_architectures(
                 sub.get("architectures"), sub_where, architectures
@@ -100,7 +95,7 @@ def _validate_scope(value, where):
     return value
 
 
-def _validate_node(node, where, seen, keys, architectures, is_entry, is_fallback=False):
+def _validate_node(node, where, seen, architectures, is_entry, is_fallback=False):
     if not isinstance(node, dict):
         raise ValueError(f"{where}: entry must be an object")
 
@@ -173,7 +168,7 @@ def _validate_node(node, where, seen, keys, architectures, is_entry, is_fallback
         "is_hardware": is_hardware,
         "suspected_hardware": suspect_text,
         "components": _validate_components(
-            node.get("components"), where, type_name, keys, architectures
+            node.get("components"), where, type_name, architectures
         ),
         "note": note,
     }
@@ -243,21 +238,26 @@ def _validate_architectures(value, where, architectures):
     return set(value)
 
 
-def _validate_components(value, where, type_name, keys, architectures):
+def _validate_components(value, where, type_name, architectures):
+    """Validate the shape of a components declaration.
+
+    Component keys are a free-form vocabulary used purely for reporting and
+    statistics, so any string is accepted; only the structure is checked
+    (string / array of strings / per-architecture object).
+    """
     if value is None:
         return None
     if isinstance(value, str):
-        candidates = [value]
-    elif isinstance(value, list):
-        candidates = value
-        for item in candidates:
+        return value
+    if isinstance(value, list):
+        for item in value:
             if not isinstance(item, str):
                 raise ValueError(
                     f"{where} ({type_name}): 'components' array items must be strings, "
                     f"got {type(item).__name__}"
                 )
-    elif isinstance(value, dict):
-        candidates = []
+        return value
+    if isinstance(value, dict):
         for arch, arch_value in value.items():
             if arch != "default" and arch not in architectures:
                 raise ValueError(
@@ -265,32 +265,23 @@ def _validate_components(value, where, type_name, keys, architectures):
                     f"{sorted(architectures)}; add routing entries in data.py first"
                 )
             if isinstance(arch_value, str):
-                candidates.append(arch_value)
-            elif isinstance(arch_value, list):
+                continue
+            if isinstance(arch_value, list):
                 for item in arch_value:
                     if not isinstance(item, str):
                         raise ValueError(
                             f"{where} ({type_name}): components['{arch}'] array items "
                             f"must be strings, got {type(item).__name__}"
                         )
-                candidates.extend(arch_value)
-            else:
-                raise ValueError(
-                    f"{where} ({type_name}): components['{arch}'] must be a string or "
-                    f"an array of strings, got {type(arch_value).__name__}"
-                )
-    else:
-        raise ValueError(
-            f"{where} ({type_name}): 'components' must be a string, array or object"
-        )
-
-    for key in candidates:
-        if key not in keys:
+                continue
             raise ValueError(
-                f"{where} ({type_name}): unknown component key '{key}' — known: "
-                f"{sorted(keys)}; add a SUGGESTION_TEMPLATES entry in data.py first"
+                f"{where} ({type_name}): components['{arch}'] must be a string or "
+                f"an array of strings, got {type(arch_value).__name__}"
             )
-    return value
+        return value
+    raise ValueError(
+        f"{where} ({type_name}): 'components' must be a string, array or object"
+    )
 
 
 def load_registry(path=None):
@@ -302,7 +293,7 @@ def load_registry(path=None):
             "create panic_types.json or pass an explicit path"
         )
     raw = json.loads(registry_path.read_text(encoding="utf-8"))
-    return validate_registry(raw, component_keys(), known_architectures())
+    return validate_registry(raw, known_architectures())
 
 
 REGISTRY = load_registry()

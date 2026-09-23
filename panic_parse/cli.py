@@ -20,10 +20,19 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     path = Path(args.ips_file)
+    if not path.exists():
+        parser.error(f"no such file or directory: '{args.ips_file}'")
+
     if path.is_dir():
         _emit(_scan_directory(path))
-    else:
-        _emit(parse_iphone_panic_log(path.read_text(encoding="utf-8")))
+        return 0
+
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, ValueError) as exc:
+        parser.exit(status=1, message=f"error: cannot read '{args.ips_file}': {exc}\n")
+
+    _emit(parse_iphone_panic_log(content))
     return 0
 
 

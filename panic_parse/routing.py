@@ -26,8 +26,16 @@ def resolve_architecture(target, model) -> str:
     model_lower = model.lower()
     iphone_match = re.search(r"iphone(\d+)", model_lower)
     if iphone_match:
-        if int(iphone_match.group(1)) <= 10:
+        major = int(iphone_match.group(1))
+        if major <= 10:
             return "DEFAULT_GENERIC"
+        # Forward compatibility: an unmapped modern iPhone inherits the
+        # newest known generation at or below its major number (the table key
+        # is the threshold), so newly released models need no data edit.
+        # Majors no entry covers keep the routing-data-gap signal.
+        floors = [k for k in data.PRODUCT_GENERATION_FALLBACK if k <= major]
+        if floors:
+            return data.PRODUCT_GENERATION_FALLBACK[max(floors)]
         return data.NOT_SUPPORTED
 
     # Non-iPhone Apple product: authoritative Not Supported, even if a

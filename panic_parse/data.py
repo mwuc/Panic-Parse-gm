@@ -1,14 +1,15 @@
 """Domain data tables for iPhone panic-log analysis.
 
-Pure data, no logic. Adding a device generation = add a bitmask table,
-routing entries, and (if needed) a suggestion template here only.
+Pure data, no logic. Adding a device generation = add a bitmask table and
+routing entries here only.
 """
 
-# Repair suggestions are driven by component keys (see SUGGESTION_TEMPLATES).
 # Per bitmask entry: "suspected_hardware" is the text emitted in the output's
-# suspected_hardware list, "components" is the component key that drives the
-# output's components list and repair_suggestion, and "description" is a
-# reserved, currently-unused field kept for reference.
+# suspected_hardware list, "components" is the free-form component key shown in
+# the output's components list (for reporting/statistics — it drives nothing
+# else), and "description" is a reserved, currently-unused field kept for
+# reference. Conventional component keys (not enforced): charging, front_als,
+# wireless, battery, interposer, board, gyro, display, sep, rf, storage, audio.
 
 SMC_BITMASK_ARCHITECTURES = {
     # iPhone 16 / 17 series (targets d93, d94, d47, d57, d58, d97, d98 ...)
@@ -299,7 +300,9 @@ TARGET_CODE_ROUTING = {
 #   - iPhone product with major number <= 10 and no exact entry above
 #     -> DEFAULT_GENERIC (old iPhone; no bitmask table exists)
 #   - iPhone product with major number >= 11 and no exact entry above
-#     -> NOT_SUPPORTED (routing-data gap; add the entry instead of guessing)
+#     -> the newest PRODUCT_GENERATION_FALLBACK generation at or below its
+#        major number (forward compatibility); if no fallback covers it,
+#        NOT_SUPPORTED (routing-data gap; add the entry instead of guessing)
 #   - non-iPhone product (iPad / Watch / ...) -> NOT_SUPPORTED
 #
 # Supported range: iPhone 11 and later.
@@ -351,24 +354,14 @@ PRODUCT_MAP_ROUTING = {
     "iPhone19,7": "ARCH_IPHONE_16_17",
 }
 
-# (component key, template) in fixed emission order. Numbers are part of the
-# template text and may skip when a key is not matched (repo convention).
-SUGGESTION_TEMPLATES = [
-    ("charging", "1. Re-seat or replace the Charging Port Flex Assembly."),
-    ("front_als", "2. Inspect or replace the Front Earpiece / Proximity & ALS Sensor Flex Assembly."),
-    ("wireless", "3. Inspect the Wireless Charging Coil and MagSafe thermal sensor flex cable."),
-    ("battery", "4. Inspect battery connector lines (Gas Gauge) or test with a genuine OEM battery replacement."),
-    ("interposer", "5. Potential double-decker logic board interposer fracture or desoldering. Reballing or interposer re-flow required."),
-    ("board", "6. It could require a sandwich reball or a bottom board swap."),
-    ("gyro", "7. Inspect the Logic Board Gyroscope IC & Power Circuit."),
-    ("display", "8. Inspect the display flex connection; re-seat or replace the flex, then test with a known-good screen assembly."),
-    ("sep", "9. SEP / encrypted hardware related: check Face ID / Touch ID module, encrypted Flash/NAND, and NFC/Stockholm components; board-level repair."),
-    ("rf", "10. Baseband or Wi-Fi/BT combo chip fault: check RF power supply, then re-ball or replace the combo chip module."),
-    ("storage", "11. NAND Flash failure: test and re-ball the storage chip, or perform board-level storage repair."),
-    ("audio", "12. Audio codec fault: check the codec chip's power and I2C lines, then re-ball or replace the audio codec."),
-]
-
-FALLBACK_SUGGESTION = (
-    "Check diode mode reading against ground on affected lines "
-    "and verify physical connector integrity."
-)
+# Forward-compatibility floor table: an iPhone product NOT listed in
+# PRODUCT_MAP_ROUTING inherits the newest architecture whose key is <= its
+# major number. The key is the *threshold*, not a literal product major, so a
+# single {17: ...} entry also covers 18, 19 and every future generation —
+# newly released iPhones diagnose without a data edit, and the same bitmask
+# layout stays valid while the platform is unchanged. Add a new entry (e.g.
+# {20: "ARCH_IPHONE_20"}) only when a generation introduces a new SMC layout;
+# majors 11-16 have no entry and therefore keep the NOT_SUPPORTED signal.
+PRODUCT_GENERATION_FALLBACK = {
+    17: "ARCH_IPHONE_16_17",
+}
