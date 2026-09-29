@@ -17,6 +17,7 @@ def parse_iphone_panic_log(log_content):
 
     # Stable key order matching the historical output shape
     return {
+        "timestamp": meta["timestamp"],
         "is_hardware_panic": result["is_hardware_panic"],
         "panic_type": result["panic_type"],
         "device_model": result["device_model"],

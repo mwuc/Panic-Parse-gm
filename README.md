@@ -25,33 +25,32 @@ Requirements: Python 3.13 (tested). Nothing else.
 python -m panic_parse <file.ips>     # or equivalently: python panic_parse.py <file.ips>
 ```
 
-Example, using a real iPhone 17 panic log containing `0x300000`:
+Example, using a real panic log:
 
 ```bash
-python -m panic_parse logs/panic-full-2026-06-29-161152.0002.ips
+python -m panic_parse logs/panic-full-2026-09-10-063146.000.ips
 ```
 
 ```json
 {
+  "timestamp": "2026-09-10 06:31:46.00 -0700",
   "is_hardware_panic": true,
-  "panic_type": "SMC_ARRAY_BITMASK",
-  "device_model": "iPhone17,2",
-  "target_code": "d94",
-  "matched_architecture": "ARCH_IPHONE_16_17",
-  "detected_codes": [
-    "0x300000"
-  ],
+  "panic_type": "AOP-SCM-BMP284",
+  "device_model": "iPhone12,1",
+  "target_code": "Unknown",
+  "matched_architecture": "ARCH_IPHONE_11_12",
+  "detected_codes": [],
   "missing_sensors": [],
   "suspected_hardware": [
-    "Charging Port Flex Assembly fault (0x300000)"
+    "Barometric pressure sensor (BMP284)"
   ],
   "components": [
-    "charging"
+    "board"
   ]
 }
 ```
 
-`0x300000` on iPhone 15 Pro / 16 / 17 is a generation-specific fault signature (charging-port flex), not the OR of its bits — see [exact codes](#the-core-domain-invariant).
+`timestamp` is the panic time taken verbatim from the log's metadata header (`"bug_type":"210","timestamp":"…"`); it is `"Unknown"` when the log has no such header.
 
 Passing a **directory** batch-processes every top-level `*.ips` file (sorted by name) and prints a single JSON object mapping filename → diagnosis. Unreadable or corrupt files map to `{"error": ...}` and don't stop the batch:
 
@@ -79,6 +78,7 @@ There is also a smoke command (`python panic_parse.py`) that prints one syntheti
 
 | Field | Type | Meaning |
 |---|---|---|
+| `timestamp` | str | panic time from the log's metadata header (e.g. `"2026-09-10 06:31:46.00 -0700"`); `"Unknown"` when absent |
 | `is_hardware_panic` | bool | True if any hardware-failure branch matched |
 | `panic_type` | str | the diagnosis: an SMC type (`SMC_ARRAY_BITMASK`, `WATCHDOG_MISSING_SENSOR`, `SMC_ASSERTION_ABSENT`), a registry type (`SEP-Panic`, `DCP-Panic`, `AOP-SCM-…`, `Halt-Panic-14`, …), `General-Panic` when nothing else classified the log, or `Not Supported` for non-iPhone devices |
 | `device_model` | str | e.g. `iPhone15,4` (from the log's `product` field, or `Hardware model:` text fallback) |
@@ -119,14 +119,14 @@ Pure-stdlib package with a one-way dependency chain — every module can be unde
 
 ```
 raw .ips content
-  → parsing.extract_metadata      → panic_string, device_model, target_code
+  → parsing.extract_metadata      → timestamp, panic_string, device_model, target_code
   → routing.resolve_architecture  → e.g. ARCH_IPHONE_16_17 (or NOT_SUPPORTED)
   → analysis.analyze:
        1. "Missing sensor(s): …" marker   ← strongest hardware evidence
        2. registry match (panic_types.json, first match wins)
        3. SMC branches: array codes / assertions   ← fallback
        4. fallback entry (General-Panic)   ← last resort for unclassified panics
-  → result dict (9 keys, stable order)
+  → result dict (10 keys, stable order)
 ```
 
 The missing-sensor marker runs first because real logs pair it with a generic `userspace watchdog timeout` header — letting the registry claim those logs would mask the concrete sensor (and its `SENSOR_HARDWARE_MAP` component).
@@ -256,7 +256,7 @@ No logic changes anywhere else. The `components` field is a free-form key shown 
 ## Testing
 
 ```bash
-python -m unittest          # 151 tests (+3 auto-skipped golden tests when mclogs/ is empty), ~1s
+python -m unittest          # 158 tests (+3 auto-skipped golden tests when mclogs/ is empty), ~1s
 ```
 
 The suite covers the real AOP panic logs in `logs/` end-to-end (dynamic `AOP-SCM-<controller>` naming from the handler dump, zero-error and no-handler fallbacks — asserted for whichever fixtures are present), and, when the `mclogs/` corpus is present, all of its files as a golden mapping (filename → expected `panic_type`; the golden tests auto-skip while the directory is empty). Plus synthetic cases for every branch: registry subtypes / platform gating / matching scope / capture-group names / per-platform components, corrupt-JSON field recovery, decimal codes, multi-value arrays, missing sensors, assertions, exact codes, null JSON values, routing precedence, and registry validation errors. Run it after any change — especially after editing `panic_types.json`.

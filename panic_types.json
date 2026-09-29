@@ -5,14 +5,88 @@
       "match_re": "\\bsep\\b[ \\t]+(?:\\S+[ \\t]+)*\\bpanic\\b",
       "is_hardware": true,
       "suspected_hardware": "SEP chip or encrypted hardware components (Face ID / Touch ID module, encrypted Flash/NAND, NFC/Stockholm)",
-      "components": "sep"
+      "components": "sep",
+      "subtypes": [
+        {
+          "type": "SEP-SKS",
+          "match": "SEP Panic: :sks",
+          "is_hardware": true,
+          "suspected_hardware": "NAND / Touch ID or Face ID flex / Board SPI",
+          "components": "storage"
+        },
+        {
+          "type": "SEP-ROM-BOOT",
+          "match": "SEP ROM boot panic",
+          "is_hardware": true,
+          "suspected_hardware": "NAND / PMU",
+          "components": "storage"
+        }
+      ]
     },
     {
       "type": "DCP-Panic",
       "match_re": "(?:\\bdcp\\b[ \\t]+(?:\\S+[ \\t]+)*\\bpanic\\b|\\bdcp\\b[ \\t]+crash)",
       "is_hardware": true,
       "suspected_hardware": "Display flex or screen assembly / Display IC / OLED Panel",
-      "components": "display"
+      "components": "display",
+      "subtypes": [
+        {
+          "type": "DCP-HPD",
+          "match": "No device added after powering on the rails. HPD=0",
+          "is_hardware": true,
+          "suspected_hardware": "USB-C Port / DP Output / HPD",
+          "components": "display"
+        },
+        {
+          "type": "DCP-PMIC",
+          "match": "Panel Power On Sequence Timeout",
+          "is_hardware": true,
+          "suspected_hardware": "Display Flex Cable / Display Power IC (Display PMIC)",
+          "components": "display"
+        },
+        {
+          "type": "DCP-BUS",
+          "match": "DCP MBOX Read Timeout",
+          "is_hardware": true,
+          "suspected_hardware": "DCP Communication Bus (Mailbox)",
+          "components": "display"
+        },
+        {
+          "type": "DCP-EDID",
+          "match": "I2C/AUX Read Failure during EDID fetch",
+          "is_hardware": true,
+          "suspected_hardware": "USB-C AUX Path / Display EDID Chip",
+          "components": "display"
+        },
+        {
+          "type": "DCP-SETMODE",
+          "match": "set_run_mode_safe",
+          "is_hardware": true,
+          "suspected_hardware": "OLED panel, flex cables, or connector pins",
+          "components": "display"
+        },
+        {
+          "type": "DCP-AUTOMODE-FAILED",
+          "match": "auto_mode_change failed",
+          "is_hardware": true,
+          "suspected_hardware": "Screen ribbon cable / (PMU/Display Power Rail)",
+          "components": "display"
+        },
+        {
+          "type": "DCP-CRASH",
+          "match": "DCP crash of unknown type",
+          "is_hardware": true,
+          "suspected_hardware": "Screen/Flex Cable/Display Power Supply IC",
+          "components": "display"
+        },
+        {
+          "type": "DCP-RCA",
+          "match": "RCA, turning cpu on when its already booted",
+          "is_hardware": true,
+          "suspected_hardware": "Display PMIC",
+          "components": "display"
+        }
+      ]
     },
     {
       "type": "AOP-Panic",

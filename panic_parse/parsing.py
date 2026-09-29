@@ -10,11 +10,12 @@ import re
 
 
 def extract_metadata(log_content):
-    """Return {"panic_string", "device_model", "target_code"} from raw content."""
+    """Return {"timestamp", "panic_string", "device_model", "target_code"}."""
     panic_string = log_content
     device_model = "Unknown"
 
     stripped = log_content.strip()
+    timestamp = _extract_timestamp(stripped)
     if stripped.startswith("{"):
         body = _load_body(stripped)
         if body is not None:
@@ -34,10 +35,28 @@ def extract_metadata(log_content):
             device_model = hw_match.group(1)
 
     return {
+        "timestamp": timestamp,
         "panic_string": panic_string,
         "device_model": device_model,
         "target_code": target_code,
     }
+
+
+def _extract_timestamp(stripped):
+    """Read "timestamp" from the .ips metadata header (first line).
+
+    The header is a separate one-line JSON document, so it stays readable even
+    when the body is truncated. Returns "Unknown" when there is no header or
+    no timestamp value.
+    """
+    first_line = stripped.split("\n", 1)[0]
+    if not first_line.startswith("{"):
+        return "Unknown"
+    try:
+        return json.loads(first_line).get("timestamp") or "Unknown"
+    except json.JSONDecodeError:
+        match = re.search(r'"timestamp"\s*:\s*"([^"\\]*)"', first_line)
+        return match.group(1) if match else "Unknown"
 
 
 def _load_body(stripped):
