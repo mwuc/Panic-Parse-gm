@@ -317,10 +317,171 @@
       "subtypes": [
         {
           "type": "monotonic",
+          "scope": "header",
           "match": "Non-monotonic",
+          "is_hardware": false,
+          "suspected_hardware": "",
+          "components": "Software"
+        },
+        {
+          "type": "EXDisplayPipeComponent-Init-Exception",
+          "scope": "header",
+          "match": "EXDisplayPipeComponent.init:Caught exception",
           "is_hardware": true,
-          "suspected_hardware": "Monotonic timer failure",
+          "suspected_hardware": "Touch/Display FPC / Display PMU / MIPI",
           "components": "display"
+        },
+        {
+          "type": "DPC-ERR-STS",
+          "scope": "header",
+          "match": "DPC_ERR_STS",
+          "is_hardware": true,
+          "suspected_hardware": "CPU Voltage Rail / Buck",
+          "components": "board"
+        },
+        {
+          "type": "TriStar-Error",
+          "scope": "header",
+          "match": "AppleTriStar2: could not find system ID",
+          "is_hardware": true,
+          "suspected_hardware": "TriStar / Hydra chip",
+          "components": "board"
+        },
+        {
+          "type": "APCIE-Baseband-Error",
+          "scope": "header",
+          "match": "apcie[2:baseband-pcie]",
+          "is_hardware": true,
+          "suspected_hardware": "Baseband IC or PMU",
+          "components": "board"
+        },
+        {
+          "type": "Baseband-Radio-Failure",
+          "scope": "header",
+          "match": "baseband radio on sequence failed",
+          "is_hardware": true,
+          "suspected_hardware": "Baseband IC or PMU",
+          "components": "board"
+        },
+        {
+          "type": "SPMI1-Error",
+          "scope": "header",
+          "match": "AppleSPMIController[aop-spmi1]",
+          "is_hardware": true,
+          "suspected_hardware": "Dual-layer Mainboard",
+          "components": "board"
+        },
+        {
+          "type": "WAKE-Hang-Error",
+          "scope": "header",
+          "match": "Sleep\/Wake hang detected",
+          "is_hardware": true,
+          "suspected_hardware": "Magic Keyboard / Smart Connector",
+          "components": "board"
+        },
+        {
+          "type": "BCMWLAN-Respawn-Error",
+          "scope": "header",
+          "match": "AppleBCMWLAN Dext didn't respawn within",
+          "is_hardware": true,
+          "suspected_hardware": "WLAN/BT",
+          "components": "board"
+        },
+        {
+          "type": "AOP-NMI-Error",
+          "scope": "header",
+          "match": "AOP NMI: No response to AP power notification",
+          "is_hardware": true,
+          "suspected_hardware": "Smart Connector / Charging Port Assembly",
+          "components": "charging"
+        },
+        {
+          "type": "BUSY-LCD",
+          "scope": "header",
+          "match_re": "(?=.*busy timeout)(?=.*IOAVSimpleVideoInterface)",
+          "is_hardware": true,
+          "suspected_hardware": "Display FPC Connector",
+          "components": "display"
+        },
+        {
+          "type": "Display-Element-Missing",
+          "scope": "header",
+          "match": "Can't find valid timing element for display",
+          "is_hardware": true,
+          "suspected_hardware": "Display EDID/EEPROM",
+          "components": "display"
+        },
+        {
+          "type": "APCIE-Centauri-Error",
+          "scope": "header",
+          "match": "apcie[0:centauri-control]",
+          "is_hardware": true,
+          "suspected_hardware": "Baseband PMU / Power Supply",
+          "components": "board"
+        },
+        {
+          "type": "BUSY-Port-Lightning",
+          "scope": "header",
+          "match_re": "(?=.*busy timeout)(?=.*Port-Lightning)",
+          "is_hardware": true,
+          "suspected_hardware": "Lightning Port Assembly / Charge Flex",
+          "components": "charging"
+        },
+        {
+          "type": "DART-Timeout",
+          "scope": "header",
+          "match": "DART busy timeout",
+          "is_hardware": true,
+          "suspected_hardware": "WLAN / Baseband / Modem IC",
+          "components": "board"
+        },
+        {
+          "type": "AOP-SERROR-Error",
+          "scope": "header",
+          "match": "AOP SERROR Exception",
+          "is_hardware": true,
+          "suspected_hardware": "Front Sensor Flex / Face ID Assembly",
+          "components": "front_als"
+        },
+        {
+          "type": "PMP-NOT-STARTED",
+          "scope": "header",
+          "match": "PMP not started",
+          "is_hardware": true,
+          "suspected_hardware": "PMIC / Power Rail",
+          "components": "board"
+        },
+        {
+          "type": "FED-ERR",
+          "scope": "header",
+          "match": "FED err (L1C I-side data parity) on E-core",
+          "is_hardware": true,
+          "suspected_hardware": "Board/SoC",
+          "components": "board"
+        },
+        {
+          "type": "MTP-PANIC",
+          "scope": "header",
+          "match": "MTP PANIC - SCMto:SCM_I2C0",
+          "is_hardware": true,
+          "suspected_hardware": "Screen Flex Assembly",
+          "components": "screen"
+        },
+        {
+          "type": "DART-AOP",
+          "scope": "header",
+          "match": "dart-aop",
+          "is_hardware": true,
+          "suspected_hardware": "Hardware Sensor or Power Rail",
+          "components": "board"
+        },
+        {
+          "type": "BUSY-IOHID",
+          "scope": "header",
+          "match_re": "(?=.*busy timeout)(?=.*IOHIDInterface)",
+          "is_hardware": true,
+          "suspected_hardware": "Camera Control Flex / USB-C Dock Port Assembly",
+          "components": "board"
         }
       ]
     }
