@@ -85,6 +85,13 @@
           "is_hardware": true,
           "suspected_hardware": "Display PMIC",
           "components": "display"
+        },
+        {
+          "type": "DCP-PMIC",
+          "match": "Display PMIC ret 0 regs",
+          "is_hardware": true,
+          "suspected_hardware": "LCD/Display Flex/Display PMIC",
+          "components": "display"
         }
       ]
     },
