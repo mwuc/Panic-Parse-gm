@@ -24,15 +24,21 @@ def analyze(panic_string, architecture):
 
     smc_bitmasks = data.SMC_BITMASK_ARCHITECTURES[architecture]
     arch_exact_codes = data.ARCHITECTURE_EXACT_CODES.get(architecture, {})
+    # Missing-sensor meanings are platform-specific (iPad vs iPhone).
+    sensor_map = (
+        data.IPAD_SENSOR_HARDWARE_MAP
+        if architecture.startswith("ARCH_IPAD")
+        else data.SENSOR_HARDWARE_MAP
+    )
 
     # An explicit "Missing sensor(s): …" marker is the strongest hardware
     # evidence: in real logs it rides on a generic "userspace watchdog
     # timeout" header, so it must outrank the registry signatures and the
     # bitmask array — otherwise the sensor diagnosis is masked.
-    if not _analyze_missing_sensors(panic_string, out):
+    if not _analyze_missing_sensors(panic_string, sensor_map, out):
         if not _analyze_registry(panic_string, architecture, out):
             _analyze_smc_array(panic_string, smc_bitmasks, arch_exact_codes, out)
-            _analyze_smc_assertions(panic_string, out)
+            _analyze_smc_assertions(panic_string, sensor_map, out)
 
     # Last resort: an unclassified panic still gets the fallback type
     # (General-Panic), whose body-keyword subtypes may attribute hardware.
@@ -220,17 +226,17 @@ def _analyze_smc_array(panic_string, smc_bitmasks, arch_exact_codes, out):
                     out["components"].append(info["components"])
 
 
-def _record_sensor(sensor, out):
+def _record_sensor(sensor, sensor_map, out):
     s_lower = sensor.lower()
     if s_lower not in out["missing_sensors"]:
         out["missing_sensors"].append(s_lower)
-    if s_lower in data.SENSOR_HARDWARE_MAP:
-        description, key = data.SENSOR_HARDWARE_MAP[s_lower]
+    if s_lower in sensor_map:
+        description, key = sensor_map[s_lower]
         out["suspected_hardware"].append(f"{s_lower.upper()} -> {description}")
         out["components"].append(key)
 
 
-def _analyze_missing_sensors(panic_string, out):
+def _analyze_missing_sensors(panic_string, sensor_map, out):
     """Record sensors named by a "Missing sensor(s): …" line.
 
     Returns True when the marker is present — the caller then skips the
@@ -247,15 +253,15 @@ def _analyze_missing_sensors(panic_string, out):
     if out["panic_type"] == "UNKNOWN":
         out["panic_type"] = "WATCHDOG_MISSING_SENSOR"
     for sensor in missing_match.group(1).strip().split():
-        _record_sensor(sensor, out)
+        _record_sensor(sensor, sensor_map, out)
     return True
 
 
-def _analyze_smc_assertions(panic_string, out):
+def _analyze_smc_assertions(panic_string, sensor_map, out):
     for sensor in re.findall(
         r"(\b[a-zA-Z0-9_]+\b)\s*!=\s*SMC_VAL_ABSENT", panic_string, re.IGNORECASE
     ):
         out["is_hardware_panic"] = True
         if out["panic_type"] == "UNKNOWN":
             out["panic_type"] = "SMC_ASSERTION_ABSENT"
-        _record_sensor(sensor, out)
+        _record_sensor(sensor, sensor_map, out)

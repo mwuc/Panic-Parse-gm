@@ -9,7 +9,7 @@ Useful for repair-shop triage: point it at a panic log, get "which flex/board co
 ## Features
 
 - **`.ips` format handling** — real panic logs are two concatenated JSON documents (a one-line metadata header, then the pretty-printed body); the parser splits and extracts `product` and `panicString` correctly.
-- **Architecture-aware bitmask decoding** — maps `(target code, device model)` to the right SMC bitmask table per device family (iPhone 11/12, 13, 14, 14 Pro, 15, 15 Pro, 16/17). **Supported range: iPhone 11 and later** — older iPhones route to a generic table, and unlisted iPhones from the newest known generation onward inherit that generation's layout (forward compatible with new releases); non-iPhone products (iPad/Watch) report `Not Supported` without any decoding.
+- **Architecture-aware bitmask decoding** — maps `(target code, device model)` to the right SMC bitmask table per device family (iPhone 11/12, 13, 14, 14 Pro, 15, 15 Pro, 16/17; iPad 5/6/M-series). **Supported ranges: iPhone 11 and later, iPad 5th generation and later** — older iPhones route to a generic table, and unlisted devices from the newest known generation onward inherit that generation's layout (forward compatible with new releases); iPod / Watch / AppleTV report `Not Supported` without any decoding.
 - **Declarative panic-type registry** — non-SMC panic types (display-coprocessor, AOP sensor bus, SEP, I2C bus faults, baseband/Wi-Fi-BT port-enable, NAND boot failure, power-management timeouts, SoC watchdog, kernel software abort) are declared in an external `panic_types.json`; **adding a new panic type is a pure data edit with no code changes**. Supports per-type subtypes, platform gating, per-platform hardware attribution, body-scope matching, and a last-resort `General-Panic` fallback for logs nothing else classifies.
 - **Multiple detection branches** — SMC sensor-array bitmask codes (hex or decimal, multi-value), exact-match codes (battery gas-gauge faults), `missing sensor(s)` text, and `SMC_VAL_ABSENT` assertions. Newer iOS versions report codes in decimal (e.g. `1048576`); all values are normalized to hex (`0x100000`) before decomposition.
 - **Component-level diagnosis** — every matched entry is reduced to a component key (`charging`, `front_als`, `wireless`, `battery`, `interposer`, `board`, `gyro`, `display`, `sep`, `rf`, `storage`, `audio`, or any custom key), emitted in the `components` list for reporting and statistics.
@@ -256,7 +256,7 @@ No logic changes anywhere else. The `components` field is a free-form key shown 
 ## Testing
 
 ```bash
-python -m unittest          # 158 tests (+3 auto-skipped golden tests when mclogs/ is empty), ~1s
+python -m unittest          # 164 tests (+3 auto-skipped golden tests when mclogs/ is empty), ~2s
 ```
 
 The suite covers the real AOP panic logs in `logs/` end-to-end (dynamic `AOP-SCM-<controller>` naming from the handler dump, zero-error and no-handler fallbacks — asserted for whichever fixtures are present), and, when the `mclogs/` corpus is present, all of its files as a golden mapping (filename → expected `panic_type`; the golden tests auto-skip while the directory is empty). Plus synthetic cases for every branch: registry subtypes / platform gating / matching scope / capture-group names / per-platform components, corrupt-JSON field recovery, decimal codes, multi-value arrays, missing sensors, assertions, exact codes, null JSON values, routing precedence, and registry validation errors. Run it after any change — especially after editing `panic_types.json`.
@@ -276,5 +276,6 @@ docs/superpowers/       # design specs and implementation plans
 ## Limitations
 
 - Diagnosis is heuristic — `components`/`suspected_hardware` indicate the *most likely* failed component, not a guarantee. Always confirm with diode-mode/continuity measurements before replacing parts.
-- Only iPhone 11 and later are supported: older iPhones get generic (DEFAULT_GENERIC) decoding; iPads/Watches report `Not Supported` with no decoding. Unlisted iPhones at or above the newest known generation (major ≥ 17) inherit the latest bitmask layout, so newly released models diagnose without a data edit; unlisted majors in between keep the `Not Supported` signal.
+- Supported: iPhone 11 and later, iPad 5th generation and later. Older iPhones get generic (`DEFAULT_GENERIC`) decoding; unlisted devices at or above the newest known generation (iPhone major ≥ 17, iPad major ≥ 17) inherit the latest bitmask layout, so newly released models diagnose without a data edit; unlisted majors in between keep the `Not Supported` signal. iPod / Watch / AppleTV are `Not Supported`.
+- Missing-sensor meanings are platform-specific: the same sensor (e.g. `tg0b`) can map to different hardware on iPad vs iPhone (`IPAD_SENSOR_HARDWARE_MAP` vs `SENSOR_HARDWARE_MAP`).
 - Exact codes match hex form only on the `SMC PANIC - ASSERT` fallback path (decimal two-digit forms are unreachable there by design — see the comment in `analysis.py`).

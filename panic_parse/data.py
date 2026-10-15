@@ -220,6 +220,133 @@ SMC_BITMASK_ARCHITECTURES = {
             "components": "wireless",
         },
     },
+    # ==================== iPad architectures ====================
+    # Full-screen iPad Pro / Air (M1 / M2 / M4 / A12X/Z)
+    # (J317/J320, J517/J522, J617/J620, J717/J720, J407, J507/J537 ...)
+    "ARCH_IPAD_MX": {
+        0x00001: {
+            "description": "Cold solder joint in the core area of the motherboard or an open circuit in the step-down power supply circuit.",
+            "suspected_hardware": "SOC / CPU Core NTC",
+            "components": "board",
+        },
+        0x00100: {
+            "description": "Side-mounted magnetic wireless charging board flex cable",
+            "suspected_hardware": "Pencil Magnetic Charging Module",
+            "components": "charging",
+        },
+        0x00800: {
+            "description": "Magnetic keyboard contact ribbon cable",
+            "suspected_hardware": "Smart Connector",
+            "components": "board",
+        },
+        0x02000: {
+            "description": "The ambient light sensor ribbon cable at the top of the screen is damaged.",
+            "suspected_hardware": "ALS (Ambient Light Sensor) / Face ID / Top Front-Facing Camera Flex Cable",
+            "components": "front_als",
+        },
+        0x40000: {
+            "description": "The temperature sensor on the bottom daughterboard is open-circuited, not securely connected, or the ribbon cable is damaged.",
+            "suspected_hardware": "USB-C / Thunderbolt Dock Flex Cable",
+            "components": "charge",
+        },
+        0x80000: {
+            "description": "PD controller chip (Tristar/Hydra/CD3217) is damaged.",
+            "suspected_hardware": "USB-C CC/PD Controller Chip",
+            "components": "board",
+        },
+        0x100000: {
+            "description": "Open circuit in the four-speaker sub-board ribbon cable or burnt-out power amplifier IC.",
+            "suspected_hardware": "Speaker / Audio Amp Area Thermistor",
+            "components": "audio",
+        },
+        0x400000: {
+            "description": "Faulty display backlight cable on the Pro 12.9 M4 Pro",
+            "suspected_hardware": "NTC for Mini-LED/OLED Backlight Driver Board",
+            "components": "display",
+        },
+        0x800000: {
+            "description": "Magnetic Connector / Wireless Charging & Accessory Path",
+            "suspected_hardware": "Magnetic Connector / Wireless Charging & Accessory Path",
+            "components": "charging",
+        },
+        0x1000000: {
+            "description": "Wireless/Celluar module failure",
+            "suspected_hardware": "Cellular Board Flex",
+            "components": "wireless",
+        },
+        0x2000000: {
+            "description": "Pencil 2 Charging Rail",
+            "suspected_hardware": "Pencil 2 Charging Rail",
+            "components": "charging",
+        },                
+    },
+    # iPad Mini 6/A17 Pro, Air 4 (J310/J311, J410, J307/J308)
+    "ARCH_IPAD_6": {
+        0x00001: {
+            "description": "Battery FPC Connector / Board PMU abnormality",
+            "suspected_hardware": "Battery FPC Connector / Board PMU",
+            "components": "board",
+        },
+        0x00004: {
+            "description": "BMS communication fail",
+            "suspected_hardware": "Battery FPC Connector / USB-C charging port flex)",
+            "components": "charging",
+        },
+        0x00080: {
+            "description": "Side Power Button (Touch ID / Power Flex Cable) were damaged",
+            "suspected_hardware": "Side Power Button (Touch ID / Power Flex Cable)",
+            "components": "board",
+        },
+        0x00100: {
+            "description": "Side-mounted magnetic wireless charging board flex cable",
+            "suspected_hardware": "Pencil Magnetic Charging Module",
+            "components": "charging",
+        },
+        0x01000: {
+            "description": "Top Volume Button Board NTC (Mini 6 Specific)",
+            "suspected_hardware": "Top Volume Button Board NTC",
+            "components": "board",
+        },
+        0x08000: {
+            "description": "Battery protection board data cable abnormality",
+            "suspected_hardware": "Battery Gas Gauge / B0T Node",
+            "components": "battery",
+        },
+        0x40000: {
+            "description": "Damaged charging port/daughterboard or open circuit in the NTC sensing line.",
+            "suspected_hardware": "USB-C charging port flex",
+            "components": "charge",
+        },
+    },
+    # iPad 5th-9th, Air 3, Mini 5 (J71/J72, J171/J181, J217, J210 ...)
+    "ARCH_IPAD_5_9": {
+        0x00002: {
+            "description": "Accidentally blew off the surrounding NTC chip resistor.",
+            "suspected_hardware": "NAND Flash Area Thermistor",
+            "components": "storage",
+        },
+        0x00010: {
+            "description": "Home Button / Touch ID Flex Cable was damaged",
+            "suspected_hardware": "Home Button / Touch ID Flex Cable",
+            "components": "board",
+        },
+        0x02000: {
+            "description": "Ambient Light Sensor & True Tone Flex Cable",
+            "suspected_hardware": "Ambient Light Sensor & True Tone Flex Cable",
+            "components": "front_als",
+        },
+        0x08000: {
+            "description": "Battery Cell Temperature (B0T / B0V)",
+            "suspected_hardware": "Battery Flex Cable",
+            "components": "battery",
+        },
+        0x10000: {
+            "description": "Lightning Connector Flex (Dock Cable)",
+            "suspected_hardware": "Lightning Connector Flex (Dock Cable)",
+            "components": "board",
+        },
+    },
+    "DEFAULT_IPAD_GENERIC": {},
 }
 
 # Exact-match codes take priority over bitwise decomposition.
@@ -245,6 +372,9 @@ ARCHITECTURE_EXACT_CODES = {
     "ARCH_IPHONE_14": {
         0x500000: ("Battery Connector / Power Button Flex (0x500000)", "battery"),
     },
+    "ARCH_IPAD_MX": {
+        0x7000000: ("Pencil Pro Charger / FPC Connector (0x7000000)", "charging"),
+    },
 }
 
 # Missing-sensor text -> (suspected_hardware text, component key)
@@ -260,6 +390,26 @@ SENSOR_HARDWARE_MAP = {
     "gyro": ("Logic Board Gyroscope IC & Power Circuit", "board"),
     "accel": ("Logic Board Accelerometer IC & Bus Circuit", "board"),
     "tw0p": ("Wireless Charging Coil / MagSafe Thermal Sensor Flex", "wireless"),
+}
+
+# iPad missing-sensor text -> (suspected_hardware text, component key).
+# Platform-specific: the same sensor name can map to different hardware on
+# iPad vs iPhone (e.g. tg0b -> board on iPad, battery on iPhone).
+IPAD_SENSOR_HARDWARE_MAP = {
+    'tg0b': ('Mainboard Core / GPU Power Area NTC', 'board'),
+    'tg0v': ('Mainboard Core / GPU Power Area NTC', 'board'),
+    'tg0p': ('SoC / CPU Processor Thermal Node', 'board'),
+    'tb0t': ('Battery Protection Board / Battery NTC', 'battery'),
+    'tb1t': ('Battery Protection Board / Battery NTC', 'battery'),
+    'ta0p': ('Ambient Light Sensor (ALS) / Top Front Camera Flex', 'front_als'),
+    'ta0s': ('Ambient Light Sensor (ALS) / Top Front Camera Flex', 'front_als'),
+    'tp0d': ('USB-C / Lightning Dock Flex NTC', 'charge'),
+    'tp0p': ('USB-C / Lightning Dock Flex NTC', 'charge'),
+    't2m0': ('Mainboard Frame / Edge Area Thermal Node', 'board'),
+    't2m1': ('Mainboard Frame / Edge Area Thermal Node', 'board'),
+    'ts0p': ('Speaker / Audio Amp Thermal Sensor', 'audio'),
+    'tc0d': ('Charging IC / Smart Connector ', 'charge'),
+    'tc0p': ('Charging IC / Smart Connector ', 'charge'),
 }
 
 # target/<code> substring -> architecture. Checked in order; first match wins.
@@ -289,6 +439,87 @@ TARGET_CODE_ROUTING = {
     "d42": "ARCH_IPHONE_11_12",
     "d43": "ARCH_IPHONE_11_12",
     "n841": "ARCH_IPHONE_11_12",
+    # --- iPad target codes ---
+    'j71b': 'ARCH_IPAD_5_9',
+    'j72b': 'ARCH_IPAD_5_9',
+    'j71s': 'ARCH_IPAD_5_9',
+    'j72s': 'ARCH_IPAD_5_9',
+    'j171': 'ARCH_IPAD_5_9',
+    'j172': 'ARCH_IPAD_5_9',
+    'j171a': 'ARCH_IPAD_5_9',
+    'j172a': 'ARCH_IPAD_5_9',
+    'j181': 'ARCH_IPAD_5_9',
+    'j182': 'ARCH_IPAD_5_9',
+    'b201': 'ARCH_IPAD_6',
+    'b202': 'ARCH_IPAD_6',
+    'j481': 'ARCH_IPAD_6',
+    'j482': 'ARCH_IPAD_6',
+    'j71': 'ARCH_IPAD_5_9',
+    'j72': 'ARCH_IPAD_5_9',
+    'j81': 'ARCH_IPAD_5_9',
+    'j82': 'ARCH_IPAD_5_9',
+    'j217': 'ARCH_IPAD_5_9',
+    'j218': 'ARCH_IPAD_5_9',
+    'j307': 'ARCH_IPAD_6',
+    'j308': 'ARCH_IPAD_6',
+    'j407': 'ARCH_IPAD_MX',
+    'j408': 'ARCH_IPAD_MX',
+    'j507': 'ARCH_IPAD_MX',
+    'j508': 'ARCH_IPAD_MX',
+    'j537': 'ARCH_IPAD_MX',
+    'j538': 'ARCH_IPAD_MX',
+    'P101': 'ARCH_IPAD_5_9',
+    'P102': 'ARCH_IPAD_5_9',
+    'P103': 'ARCH_IPAD_5_9',
+    'j85': 'ARCH_IPAD_5_9',
+    'j86': 'ARCH_IPAD_5_9',
+    'j87': 'ARCH_IPAD_5_9',
+    'j85m': 'ARCH_IPAD_5_9',
+    'j86m': 'ARCH_IPAD_5_9',
+    'j87m': 'ARCH_IPAD_5_9',
+    'j96': 'ARCH_IPAD_5_9',
+    'j97': 'ARCH_IPAD_5_9',
+    'j210': 'ARCH_IPAD_5_9',
+    'j211': 'ARCH_IPAD_5_9',
+    'j310': 'ARCH_IPAD_6',
+    'j311': 'ARCH_IPAD_6',
+    'j410': 'ARCH_IPAD_6',
+    'j411': 'ARCH_IPAD_6',
+    'ipad14p': 'ARCH_IPAD_6',
+    'j127': 'ARCH_IPAD_5_9',
+    'j128': 'ARCH_IPAD_5_9',
+    'j207': 'ARCH_IPAD_5_9',
+    'j208': 'ARCH_IPAD_5_9',
+    'j317': 'ARCH_IPAD_MX',
+    'j317x': 'ARCH_IPAD_MX',
+    'j318': 'ARCH_IPAD_MX',
+    'j318x': 'ARCH_IPAD_MX',
+    'j417': 'ARCH_IPAD_MX',
+    'j418': 'ARCH_IPAD_MX',
+    'j517': 'ARCH_IPAD_MX',
+    'j517x': 'ARCH_IPAD_MX',
+    'j518': 'ARCH_IPAD_MX',
+    'j518x': 'ARCH_IPAD_MX',
+    'j522': 'ARCH_IPAD_MX',
+    'j523': 'ARCH_IPAD_MX',
+    'j717': 'ARCH_IPAD_MX',
+    'j718': 'ARCH_IPAD_MX',
+    'j98a': 'ARCH_IPAD_5_9',
+    'j99a': 'ARCH_IPAD_5_9',
+    'j120': 'ARCH_IPAD_5_9',
+    'j121': 'ARCH_IPAD_5_9',
+    'j320': 'ARCH_IPAD_MX',
+    'j320x': 'ARCH_IPAD_MX',
+    'j321': 'ARCH_IPAD_MX',
+    'j321x': 'ARCH_IPAD_MX',
+    'j420': 'ARCH_IPAD_MX',
+    'j421': 'ARCH_IPAD_MX',
+    'j522x': 'ARCH_IPAD_MX',
+    'j523x': 'ARCH_IPAD_MX',
+    'j620': 'ARCH_IPAD_MX',
+    'j621': 'ARCH_IPAD_MX',
+    'j720': 'ARCH_IPAD_MX',
+    'j721': 'ARCH_IPAD_MX',
 }
 
 # Exact product string ("product" field / "Hardware model:" text, e.g.
@@ -303,9 +534,12 @@ TARGET_CODE_ROUTING = {
 #     -> the newest PRODUCT_GENERATION_FALLBACK generation at or below its
 #        major number (forward compatibility); if no fallback covers it,
 #        NOT_SUPPORTED (routing-data gap; add the entry instead of guessing)
-#   - non-iPhone product (iPad / Watch / ...) -> NOT_SUPPORTED
+#   - iPad product with no exact entry above -> the newest
+#     IPAD_PRODUCT_GENERATION_FALLBACK generation at or below its major,
+#     else NOT_SUPPORTED
+#   - iPod / Watch / AppleTV -> NOT_SUPPORTED
 #
-# Supported range: iPhone 11 and later.
+# Supported ranges: iPhone 11 and later; iPad 5th generation and later.
 NOT_SUPPORTED = "NOT_SUPPORTED"
 NOT_SUPPORTED_MESSAGE = "Not Supported"
 
@@ -352,6 +586,89 @@ PRODUCT_MAP_ROUTING = {
     "iPhone19,3": "ARCH_IPHONE_16_17",
     "iPhone19,4": "ARCH_IPHONE_16_17",
     "iPhone19,7": "ARCH_IPHONE_16_17",
+    # --- iPad product codes ---
+    'iPad6,11': 'ARCH_IPAD_5_9',
+    'iPad6,12': 'ARCH_IPAD_5_9',
+    'iPad7,5': 'ARCH_IPAD_5_9',
+    'iPad7,6': 'ARCH_IPAD_5_9',
+    'iPad7,11': 'ARCH_IPAD_5_9',
+    'iPad7,12': 'ARCH_IPAD_5_9',
+    'iPad11,6': 'ARCH_IPAD_5_9',
+    'iPad11,7': 'ARCH_IPAD_5_9',
+    'iPad12,1': 'ARCH_IPAD_5_9',
+    'iPad12,2': 'ARCH_IPAD_5_9',
+    'iPad13,18': 'ARCH_IPAD_6',
+    'iPad13,19': 'ARCH_IPAD_6',
+    'iPad15,7': 'ARCH_IPAD_6',
+    'iPad15,8': 'ARCH_IPAD_6',
+    'iPad4,1': 'ARCH_IPAD_5_9',
+    'iPad4,2': 'ARCH_IPAD_5_9',
+    'iPad4,3': 'ARCH_IPAD_5_9',
+    'iPad5,3': 'ARCH_IPAD_5_9',
+    'iPad5,4': 'ARCH_IPAD_5_9',
+    'iPad11,3': 'ARCH_IPAD_5_9',
+    'iPad11,4': 'ARCH_IPAD_5_9',
+    'iPad13,1': 'ARCH_IPAD_6',
+    'iPad13,2': 'ARCH_IPAD_6',
+    'iPad13,16': 'ARCH_IPAD_MX',
+    'iPad13,17': 'ARCH_IPAD_MX',
+    'iPad14,8': 'ARCH_IPAD_MX',
+    'iPad14,9': 'ARCH_IPAD_MX',
+    'iPad14,10': 'ARCH_IPAD_MX',
+    'iPad14,11': 'ARCH_IPAD_MX',
+    'iPad2,5': 'ARCH_IPAD_5_9',
+    'iPad2,6': 'ARCH_IPAD_5_9',
+    'iPad2,7': 'ARCH_IPAD_5_9',
+    'iPad4,4': 'ARCH_IPAD_5_9',
+    'iPad4,5': 'ARCH_IPAD_5_9',
+    'iPad4,6': 'ARCH_IPAD_5_9',
+    'iPad4,7': 'ARCH_IPAD_5_9',
+    'iPad4,8': 'ARCH_IPAD_5_9',
+    'iPad4,9': 'ARCH_IPAD_5_9',
+    'iPad5,1': 'ARCH_IPAD_5_9',
+    'iPad5,2': 'ARCH_IPAD_5_9',
+    'iPad11,1': 'ARCH_IPAD_5_9',
+    'iPad11,2': 'ARCH_IPAD_5_9',
+    'iPad14,1': 'ARCH_IPAD_6',
+    'iPad14,2': 'ARCH_IPAD_6',
+    'iPad16,1': 'ARCH_IPAD_6',
+    'iPad16,2': 'ARCH_IPAD_6',
+    'iPad6,3': 'ARCH_IPAD_5_9',
+    'iPad6,4': 'ARCH_IPAD_5_9',
+    'iPad7,3': 'ARCH_IPAD_5_9',
+    'iPad7,4': 'ARCH_IPAD_5_9',
+    'iPad8,1': 'ARCH_IPAD_MX',
+    'iPad8,2': 'ARCH_IPAD_MX',
+    'iPad8,3': 'ARCH_IPAD_MX',
+    'iPad8,4': 'ARCH_IPAD_MX',
+    'iPad8,9': 'ARCH_IPAD_MX',
+    'iPad8,10': 'ARCH_IPAD_MX',
+    'iPad13,4': 'ARCH_IPAD_MX',
+    'iPad13,5': 'ARCH_IPAD_MX',
+    'iPad13,6': 'ARCH_IPAD_MX',
+    'iPad13,7': 'ARCH_IPAD_MX',
+    'iPad14,3': 'ARCH_IPAD_MX',
+    'iPad14,4': 'ARCH_IPAD_MX',
+    'iPad16,3': 'ARCH_IPAD_MX',
+    'iPad16,4': 'ARCH_IPAD_MX',
+    'iPad6,7': 'ARCH_IPAD_5_9',
+    'iPad6,8': 'ARCH_IPAD_5_9',
+    'iPad7,1': 'ARCH_IPAD_5_9',
+    'iPad7,2': 'ARCH_IPAD_5_9',
+    'iPad8,5': 'ARCH_IPAD_MX',
+    'iPad8,6': 'ARCH_IPAD_MX',
+    'iPad8,7': 'ARCH_IPAD_MX',
+    'iPad8,8': 'ARCH_IPAD_MX',
+    'iPad8,11': 'ARCH_IPAD_MX',
+    'iPad8,12': 'ARCH_IPAD_MX',
+    'iPad13,8': 'ARCH_IPAD_MX',
+    'iPad13,9': 'ARCH_IPAD_MX',
+    'iPad13,10': 'ARCH_IPAD_MX',
+    'iPad13,11': 'ARCH_IPAD_MX',
+    'iPad14,5': 'ARCH_IPAD_MX',
+    'iPad14,6': 'ARCH_IPAD_MX',
+    'iPad16,5': 'ARCH_IPAD_MX',
+    'iPad16,6': 'ARCH_IPAD_MX',
 }
 
 # Forward-compatibility floor table: an iPhone product NOT listed in
@@ -364,4 +681,10 @@ PRODUCT_MAP_ROUTING = {
 # majors 11-16 have no entry and therefore keep the NOT_SUPPORTED signal.
 PRODUCT_GENERATION_FALLBACK = {
     17: "ARCH_IPHONE_16_17",
+}
+
+# Forward-compatibility floor table for iPads (same semantics as the iPhone
+# one above). Kept separate because the keys collide with the iPhone table.
+IPAD_PRODUCT_GENERATION_FALLBACK = {
+    17: 'ARCH_IPAD_MX',
 }
