@@ -436,6 +436,14 @@
           "components": "charging"
         },
         {
+          "type": "BUSY-BCMWLANCore",
+          "scope": "header",
+          "match_re": "(?=.*busy timeout)(?=.*AppleBCMWLANCore)",
+          "is_hardware": true,
+          "suspected_hardware": "Dual-layer Mainboard/Wi-Fi chip",
+          "components": "board"
+        },
+        {
           "type": "DART-Timeout",
           "scope": "header",
           "match": "DART busy timeout",
@@ -476,6 +484,22 @@
           "components": "screen"
         },
         {
+          "type": "MTP-PANIC-UBSAN",
+          "scope": "header",
+          "match": "MTP PANIC - ubsan",
+          "is_hardware": true,
+          "suspected_hardware": "Display assembly touch flex",
+          "components": "screen"
+        },
+        {
+          "type": "MTP-PANIC-SCM00",
+          "scope": "header",
+          "match": "MTP PANIC - SCMto:SCM0,0",
+          "is_hardware": true,
+          "suspected_hardware": "Camera Control button flex",
+          "components": "Camera"
+        },
+        {
           "type": "DART-AOP",
           "scope": "header",
           "match": "dart-aop",
@@ -489,6 +513,94 @@
           "match_re": "(?=.*busy timeout)(?=.*IOHIDInterface)",
           "is_hardware": true,
           "suspected_hardware": "Camera Control Flex / USB-C Dock Port Assembly",
+          "components": "board"
+        },
+        {
+          "type": "APPLE-KRAKEN",
+          "scope": "header",
+          "match": "AppleKraken: could not find system ID",
+          "is_hardware": true,
+          "suspected_hardware": "USB Dock Flex",
+          "components": "charging"
+        },
+        {
+          "type": "APPLE-HYDRA",
+          "scope": "header",
+          "match": "AppleHydra: could not find system ID",
+          "is_hardware": true,
+          "suspected_hardware": "USB Dock Flex",
+          "components": "charging"
+        },
+        {
+          "type": "ANS2-Recoverable-Panic",
+          "scope": "header",
+          "match": "ANS2 Recoverable Panic",
+          "is_hardware": true,
+          "suspected_hardware": "NAND",
+          "components": "storage"
+        },
+        {
+          "type": "VM-EXHAUSTED-Panic",
+          "scope": "header",
+          "match": "all vm-pageshortage victims exhausted",
+          "is_hardware": true,
+          "suspected_hardware": "NAND/RAM chips",
+          "components": "storage"
+        },
+        {
+          "type": "DEXT-UNEXPECTED-Panic",
+          "scope": "header",
+          "match": "Dext relaunched with unexpected status",
+          "is_hardware": true,
+          "suspected_hardware": "Dual-layer Mainboard/Wi-Fi chip",
+          "components": "board"
+        },
+        {
+          "type": "AUEARLYBOOT-EXITED",
+          "scope": "header",
+          "match_re": "auearlyboot\\[\\d+\\] exited",
+          "is_hardware": true,
+          "suspected_hardware": "Charging port flex cable or Type-C control chip",
+          "components": "charging"
+        },
+        {
+          "type": "IOUSERSERVER-CRASHED",
+          "scope": "header",
+          "match_re": "Driver IOUserServer\\(com\\.apple\\.bcmwlan-0x[0-9a-fA-F]+\\) has crashed too many times",
+          "is_hardware": true,
+          "suspected_hardware": "Dual-layer Mainboard/Wi-Fi chip",
+          "components": "board"
+        },
+        {
+          "type": "LLC-Bus-Error",
+          "scope": "header",
+          "match": "LLC Bus error from cpu",
+          "is_hardware": true,
+          "suspected_hardware": "Processor / Upper RAM chips",
+          "components": "board"
+        },
+        {
+          "type": "VERIFY-LLC-Error",
+          "scope": "header",
+          "match": "pio_write_verify_llc_err_inf_nrec",
+          "is_hardware": true,
+          "suspected_hardware": "NAND",
+          "components": "storage"
+        },
+        {
+          "type": "PREFETCH-ABORT",
+          "scope": "header",
+          "match": "SMC PREFETCH ABORT",
+          "is_hardware": true,
+          "suspected_hardware": "Battery Fuel Gauge / BMS Ribbon Cable",
+          "components": "battery"
+        },
+        {
+          "type": "SOCHOT-HOT",
+          "scope": "header",
+          "match": "SOCHOT - Hot Hot Hot",
+          "is_hardware": true,
+          "suspected_hardware": "Dual-layer Mainboard/CPU chip",
           "components": "board"
         }
       ]
